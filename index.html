@@ -195,6 +195,11 @@
             setProfiles(prevProfiles => prevProfiles.map(p => p.id === updatedProfile.id ? updatedProfile : p));
           };
 
+          const addToCart = useCallback((card) => { setCart(prev => [...prev, { ...card, finalPrice: card.price || 0, lang: 'EN', cartItemId: Date.now() + Math.random() }]); }, []);
+          const removeFromCart = useCallback((id) => { setCart(prev => prev.filter(item => item.cartItemId !== id)); }, []);
+          const updateCartItemPrice = useCallback((id, price) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, finalPrice: price } : item)); }, []);
+          const updateCartItemLang = useCallback((id, lang) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, lang: lang } : item)); }, []);
+
           const addTransaction = useCallback(async (tx) => {
             try {
               const { data, error } = await supabaseClient.from('transactions').insert([tx]).select();
@@ -205,14 +210,20 @@
             } catch (e) { alert("Error: " + e.message); }
           }, []);
 
-          const updateTransactionCardPrice = useCallback(async (txId, itemId, price) => {
+          const updateTransactionCard = useCallback(async (txId, itemId, field, value) => {
             setTransactions(prev => {
               const newTxs = [...prev];
               const tx = newTxs.find(t => t.id === txId);
               if (!tx) return prev;
-              const updatedCards = tx.cards.map(c => c.cartItemId === itemId ? { ...c, finalPrice: parseFloat(price) || 0 } : c);
-              const newTotal = updatedCards.reduce((sum, c) => sum + (c.finalPrice || 0), 0);
+              
+              const updatedCards = tx.cards.map(c => 
+                c.cartItemId === itemId ? { ...c, [field]: value } : c
+              );
+              
+              const newTotal = field === 'finalPrice' ? updatedCards.reduce((sum, c) => sum + (c.finalPrice || 0), 0) : tx.total;
+              
               supabaseClient.from('transactions').update({ cards: updatedCards, total: newTotal }).eq('id', txId).then(r => { if (r.error) alert(r.error.message); });
+              
               return newTxs.map(t => t.id === txId ? { ...t, cards: updatedCards, total: newTotal } : t);
             });
           }, []);
@@ -232,18 +243,14 @@
             if (isLoading) return <div className="text-center p-10">Loading data...</div>;
             if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
             switch (currentView) {
-              case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, profiles, addTransaction, currentUserProfile }} />;
-              case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCardPrice, toggleTransactionStatus }} />;
+              case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }} />;
+              case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCard, toggleTransactionStatus }} />;
               case 'balance': return <BalanceDashboard {...{ transactions, profiles, addTransaction, currentUserProfile }} />;
               case 'matrix': return <BalanceMatrix {...{ transactions, profiles }} />;
               case 'profile': return <ProfileView user={user} profile={currentUserProfile} onProfileUpdate={handleProfileUpdate} />;
               default: return <div>Welcome</div>;
             }
           };
-          
-          const addToCart = useCallback((card) => { setCart(prev => [...prev, { ...card, finalPrice: card.price || 0, cartItemId: Date.now() + Math.random() }]); }, []);
-          const removeFromCart = useCallback((id) => { setCart(prev => prev.filter(item => item.cartItemId !== id)); }, []);
-          const updateCartItemPrice = useCallback((id, price) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, finalPrice: price } : item)); }, []);
 
           return (
             <div className="bg-white text-gray-800 h-screen font-sans flex overflow-hidden">
@@ -257,12 +264,12 @@
                 </div>
                 <div className="shrink-0 text-center">
                     {currentUserProfile && (
-                        <div className="mb-2 px-2">
+                        <button onClick={() => setCurrentView('profile')} className="mb-2 px-2 py-1 rounded-lg hover:bg-gray-100 w-full text-center" title="Go to your profile">
                             <span className="text-xs text-gray-500">Logged in as</span>
                             <span className="text-sm font-semibold text-blue-700 block truncate" title={currentUserProfile.nickname}>
                                 {currentUserProfile.nickname}
                             </span>
-                        </div>
+                        </button>
                     )}
                     <button onClick={handleSignOut} className="p-3 rounded-lg text-gray-600 hover:bg-gray-100" title="Sign Out"><LogOutIcon /></button>
                 </div>
@@ -358,7 +365,7 @@
             return debouncedValue;
         }
 
-        const SearchAndCartView = React.memo(({ cart, addToCart, removeFromCart, updateCartItemPrice, profiles, addTransaction, currentUserProfile }) => {
+        const SearchAndCartView = React.memo(({ cart, addToCart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }) => {
           const [searchResults, setSearchResults] = useState([]);
           const [query, setQuery] = useState('');
           const [isLoading, setIsLoading] = useState(false);
@@ -413,13 +420,13 @@
               </div>
               <div className="lg:sticky lg:top-8 h-fit">
                 <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center"><span className="ml-2">Cart</span></h2>
-                <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} profiles={profiles} addTransaction={addTransaction} currentUserProfile={currentUserProfile} />
+                <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} updateCartItemLang={updateCartItemLang} profiles={profiles} addTransaction={addTransaction} currentUserProfile={currentUserProfile} />
               </div>
             </div>
           );
         });
 
-        const Cart = React.memo(({ cart, removeFromCart, updateCartItemPrice, profiles, addTransaction, currentUserProfile }) => {
+        const Cart = React.memo(({ cart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }) => {
             const [buyerId, setBuyerId] = useState('');
             const [sellerId, setSellerId] = useState(currentUserProfile?.id || '');
 
@@ -443,7 +450,6 @@
                     alert("Buyer and Seller cannot be the same person."); return;
                 }
                 
-                // Permission check on client-side
                 const isAdmin = currentUserProfile?.role === 'admin';
                 const is_involved = currentUserProfile?.id === buyerId || currentUserProfile?.id === sellerId;
                 if (!isAdmin && !is_involved) {
@@ -462,6 +468,12 @@
 
             const total = useMemo(() => cart.reduce((sum, c) => sum + (parseFloat(c.finalPrice) || 0), 0).toFixed(2), [cart]);
 
+            const getProfileFullName = (profile) => {
+                if (!profile) return '';
+                const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+                return fullName || profile.nickname;
+            };
+
             return (
                 <div className="bg-white rounded-lg p-4 flex flex-col border border-gray-200 shadow-sm max-h-[calc(100vh-8rem)]">
                     <div className="flex-grow overflow-y-auto mb-4 pr-2">
@@ -474,7 +486,8 @@
                                             <p className="text-xs text-gray-500">{card.set_name}</p>
                                         </div>
                                         <div className="flex items-center">
-                                            <input type="number" value={card.finalPrice} onChange={(e) => updateCartItemPrice(card.cartItemId, e.target.value)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono text-gray-900" step="0.01" />
+                                            <input type="text" value={card.lang} onChange={(e) => updateCartItemLang(card.cartItemId, e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono text-gray-900" maxLength="2" />
+                                            <input type="number" value={card.finalPrice} onChange={(e) => updateCartItemPrice(card.cartItemId, e.target.value)} className="w-20 ml-2 bg-white border border-gray-300 rounded-md p-1 text-right font-mono text-gray-900" step="0.01" />
                                             <span className="ml-1 mr-2 text-gray-600">€</span>
                                             <button onClick={() => removeFromCart(card.cartItemId)} className="text-red-500 hover:text-red-700"><Trash2Icon /></button>
                                         </div>
@@ -489,13 +502,13 @@
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700">Buyer</label>
                                     <select value={buyerId} onChange={e => setBuyerId(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
-                                        {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                                        {profiles.map(p => <option key={p.id} value={p.id} title={getProfileFullName(p)}>{p.nickname}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700">Seller</label>
                                     <select value={sellerId} onChange={e => setSellerId(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
-                                        {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                                        {profiles.map(p => <option key={p.id} value={p.id} title={getProfileFullName(p)}>{p.nickname}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -507,29 +520,79 @@
             );
         });
 
-        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCardPrice, toggleTransactionStatus }) => {
+        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus }) => {
+            const [filters, setFilters] = useState({ buyer: 'all', seller: 'all', startDate: '', endDate: '' });
+            
             const profilesById = useMemo(() => profiles.reduce((acc, profile) => {
                 acc[profile.id] = profile;
                 return acc;
             }, {}), [profiles]);
 
-            const getProfileNickname = (id) => profilesById[id]?.nickname || 'Unknown User';
+            const handleFilterChange = (e) => { setFilters(prev => ({ ...prev, [e.target.name]: e.target.value })); };
+            
+            const filteredTransactions = useMemo(() => (transactions || [])
+                .filter(tx => filters.buyer === 'all' || tx.buyer === filters.buyer)
+                .filter(tx => filters.seller === 'all' || tx.seller === filters.seller)
+                .filter(tx => {
+                    if (!filters.startDate && !filters.endDate) return true;
+                    const txDate = new Date(tx.created_at); txDate.setHours(0,0,0,0);
+                    const startDate = filters.startDate ? new Date(filters.startDate) : null;
+                    const endDate = filters.endDate ? new Date(filters.endDate) : null;
+                    if (startDate && txDate < startDate) return false;
+                    if (endDate && txDate > endDate) return false;
+                    return true;
+                }), [transactions, filters]);
+
+            const getProfileData = (id, field) => profilesById[id]?.[field] || (field === 'nickname' ? 'Unknown User' : '');
+            const getProfileFullName = (id) => {
+                const p = profilesById[id];
+                if (!p) return 'Unknown User';
+                const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+                return fullName || p.nickname;
+            };
 
             return (
                 <div>
                     <h1 className="text-3xl font-bold text-blue-700 mb-6">Transaction History</h1>
+                     <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">Buyer</label>
+                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                                <option value="all">All</option>
+                                {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">Seller</label>
+                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                                <option value="all">All</option>
+                                {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">Start Date</label>
+                            <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">End Date</label>
+                            <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
+                        </div>
+                    </div>
                     <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3">Date</th><th className="px-4 py-3">Buyer</th><th className="px-4 py-3">Seller</th>
-                                        <th className="px-4 py-3">Card</th><th className="px-4 py-3">Set</th><th className="px-4 py-3">Final Price</th>
+                                        <th className="px-4 py-3">Card</th><th className="px-4 py-3">Set</th>
+                                        <th className="px-4 py-3">Lang</th>
+                                        <th className="px-4 py-3">CardMarket Trend</th>
+                                        <th className="px-4 py-3">Final Price</th>
                                         <th className="px-4 py-3 text-right">Total</th><th className="px-4 py-3">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {transactions.slice().reverse().map(tx => {
+                                    {filteredTransactions.slice().reverse().map(tx => {
                                         const isCancelled = tx.status === 'cancelled';
                                         return (
                                             <React.Fragment key={tx.id}>
@@ -537,14 +600,38 @@
                                                     <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-gray-100' : 'hover:bg-gray-50'}`}>
                                                         {index === 0 && (<>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
-                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}>{getProfileNickname(tx.buyer)}</td>
-                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}>{getProfileNickname(tx.seller)}</td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.buyer)}>{getProfileData(tx.buyer, 'nickname')}</td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.seller)}>{getProfileData(tx.seller, 'nickname')}</td>
                                                         </>)}
-                                                        <td className="px-4 py-4"><a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}</a></td>
-                                                        <td className="px-4 py-4 text-gray-600">{c.set || c.set_name}</td>
+                                                        <td className="px-4 py-4 relative group">
+                                                            <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                                {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
+                                                            </a>
+                                                            {c.image_uri && (
+                                                                <img 
+                                                                    src={c.image_uri} 
+                                                                    alt={c.name} 
+                                                                    className="hidden group-hover:block absolute z-20 top-0 left-full ml-2 w-36 rounded-lg shadow-lg"
+                                                                    onError={(e) => e.target.style.display='none'}
+                                                                />
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-gray-600">{c.set_name}</td>
+                                                        <td className="px-4 py-4">
+                                                            <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono" maxLength="2" disabled={isCancelled} />
+                                                        </td>
+                                                        <td className="px-4 py-4 font-mono">
+                                                            {c.purchase_uris?.cardmarket ? (
+                                                                <a href={c.purchase_uris.cardmarket} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                                    {typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'} <ExternalLinkIcon />
+                                                                </a>
+                                                            ) : (
+                                                                <span>{typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'}</span>
+                                                            )}
+                                                        </td>
                                                         <td className="px-4 py-4">
                                                             <div className="flex items-center">
-                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCardPrice(tx.id, c.cartItemId, e.target.value)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono" step="0.01" disabled={isCancelled} />
+                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'finalPrice', parseFloat(e.target.value) || 0)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono" step="0.01" disabled={isCancelled} />
                                                                 <span className="ml-1 text-gray-600">€</span>
                                                             </div>
                                                         </td>
@@ -609,6 +696,13 @@
 
                 return { debts: myDebts, credits: myCredits, profilesById: profsById };
             }, [transactions, profiles, currentUserProfile]);
+            
+            const getProfileFullName = (id) => {
+                const p = profilesById[id];
+                if (!p) return 'Unknown';
+                const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+                return fullName || p.nickname;
+            };
 
             return (
                 <div>
@@ -630,7 +724,7 @@
                                            <div className="flex items-center gap-3">
                                                <span className="font-medium text-gray-700">You</span>
                                                <ArrowRightIcon />
-                                               <span className="font-medium text-gray-700">{profilesById[debt.to]?.nickname || 'Unknown'}</span>
+                                               <span className="font-medium text-gray-700" title={getProfileFullName(debt.to)}>{profilesById[debt.to]?.nickname || 'Unknown'}</span>
                                            </div>
                                            <span className="font-bold text-red-600 text-lg">{debt.amount.toFixed(2)} €</span>
                                        </li>
@@ -647,7 +741,7 @@
                                    {credits.map(credit => (
                                        <li key={credit.from} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                                            <div className="flex items-center gap-3">
-                                                <span className="font-medium text-gray-700">{profilesById[credit.from]?.nickname || 'Unknown'}</span>
+                                                <span className="font-medium text-gray-700" title={getProfileFullName(credit.from)}>{profilesById[credit.from]?.nickname || 'Unknown'}</span>
                                                 <ArrowRightIcon />
                                                 <span className="font-medium text-gray-700">You</span>
                                            </div>
@@ -663,27 +757,26 @@
         });
 
         const BalanceMatrix = React.memo(({ transactions, profiles }) => {
-            const { balances, profilesById } = useMemo(() => {
+            const { balances } = useMemo(() => {
                 const activeTxs = (transactions || []).filter(tx => tx.status !== 'cancelled');
-                
-                const profsById = profiles.reduce((acc, p) => {
-                    acc[p.id] = p;
-                    return acc;
-                }, {});
-
                 const bal = {};
                 profiles.forEach(p1 => {
                     bal[p1.id] = {};
                     profiles.forEach(p2 => { if (p1.id !== p2.id) bal[p1.id][p2.id] = 0; });
                 });
-
                 activeTxs.forEach(tx => {
                     if (tx.buyer && tx.seller && tx.buyer !== tx.seller && bal[tx.buyer] && bal[tx.seller]) {
                         bal[tx.buyer][tx.seller] = (bal[tx.buyer][tx.seller] || 0) + tx.total;
                     }
                 });
-                return { balances: bal, profilesById: profsById };
+                return { balances: bal };
             }, [transactions, profiles]);
+
+            const getProfileFullName = (profile) => {
+                if (!profile) return '';
+                const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+                return fullName || profile.nickname;
+            };
 
             return (
                 <div>
@@ -694,13 +787,13 @@
                             <thead>
                                 <tr>
                                     <th className="p-3 border-b-2 border-r border-gray-200 text-gray-600 bg-gray-50 sticky left-0 z-10">↓ Owes / Owed to →</th>
-                                    {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-gray-200 text-gray-800 font-semibold">{p.nickname}</th>)}
+                                    {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-gray-200 text-gray-800 font-semibold" title={getProfileFullName(p)}>{p.nickname}</th>)}
                                 </tr>
                             </thead>
                             <tbody>
                                 {profiles.map(buyer => (
                                     <tr key={buyer.id}>
-                                        <th className="p-3 border-r border-gray-200 text-left font-semibold text-gray-800 bg-gray-50 sticky left-0 z-10">{buyer.nickname}</th>
+                                        <th className="p-3 border-r border-gray-200 text-left font-semibold text-gray-800 bg-gray-50 sticky left-0 z-10" title={getProfileFullName(buyer)}>{buyer.nickname}</th>
                                         {profiles.map(seller => {
                                             if (buyer.id === seller.id) return <td key={seller.id} className="p-3 bg-gray-100 border-t border-gray-200"></td>;
                                             const netBalance = (balances[buyer.id]?.[seller.id] || 0) - (balances[seller.id]?.[buyer.id] || 0);
