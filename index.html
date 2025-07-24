@@ -11,6 +11,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <!-- Chargement de Babel pour transpiler le JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Chargement de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- C'est ici que notre application React sera injectée -->
@@ -21,7 +23,8 @@
         const { useState, useEffect, createContext, useContext, useMemo, useCallback } = React;
 
         // --- Configuration et client Supabase ---
-        let supabase; 
+        // Le client sera initialisé une seule fois.
+        let supabaseClient; 
         const supabaseUrl = "https://pnnmxmfstynzyhvdfdyw.supabase.co";
         const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubm14bWZzdHluenlodmRmZHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTU1NjQsImV4cCI6MjA2ODg3MTU2NH0.fzuomyiBGqk07noz_qW0dmZAqg3eulpXQiczoE26DWU";
 
@@ -71,14 +74,14 @@
               setIsLoading(true);
               setError(null);
               try {
-                if (!supabase) {
-                  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-                  supabase = createClient(supabaseUrl, supabaseKey);
+                if (!supabaseClient) {
+                  const { createClient } = supabase; // Utilise l'objet global Supabase
+                  supabaseClient = createClient(supabaseUrl, supabaseKey);
                 }
-                const { data: peopleData, error: peopleError } = await supabase.from('people').select('*');
+                const { data: peopleData, error: peopleError } = await supabaseClient.from('people').select('*');
                 if (peopleError) throw peopleError;
                 setPeople(peopleData);
-                const { data: transactionsData, error: transactionsError } = await supabase.from('transactions').select('*');
+                const { data: transactionsData, error: transactionsError } = await supabaseClient.from('transactions').select('*');
                 if (transactionsError) throw transactionsError;
                 setTransactions(transactionsData);
               } catch (err) {
@@ -96,7 +99,7 @@
           const updateCartItemPrice = useCallback((id, price) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, finalPrice: price } : item)); }, []);
           const addTransaction = useCallback(async (tx) => {
             try {
-              const { data, error } = await supabase.from('transactions').insert([tx]).select();
+              const { data, error } = await supabaseClient.from('transactions').insert([tx]).select();
               if (error) throw error;
               setTransactions(prev => [...prev, data[0]]);
               setCart([]);
@@ -106,7 +109,7 @@
           const addPerson = useCallback(async (name) => {
             if (name && !people.find(p => p.name === name)) {
               try {
-                const { data, error } = await supabase.from('people').insert([{ name }]).select();
+                const { data, error } = await supabaseClient.from('people').insert([{ name }]).select();
                 if (error) throw error;
                 setPeople(prev => [...prev, data[0]]);
               } catch (e) { alert("Error: " + e.message); }
@@ -114,7 +117,7 @@
           }, [people]);
           const removePerson = useCallback(async (id) => {
             try {
-              const { error } = await supabase.from('people').delete().eq('id', id);
+              const { error } = await supabaseClient.from('people').delete().eq('id', id);
               if (error) throw error;
               setPeople(prev => prev.filter(p => p.id !== id));
             } catch (e) { alert("Error: " + e.message); }
@@ -126,7 +129,7 @@
               if (!tx) return prev;
               const updatedCards = tx.cards.map(c => c.cartItemId === itemId ? { ...c, finalPrice: parseFloat(price) || 0 } : c);
               const newTotal = updatedCards.reduce((sum, c) => sum + (c.finalPrice || 0), 0);
-              supabase.from('transactions').update({ cards: updatedCards, total: newTotal }).eq('id', txId).then(r => { if (r.error) alert(r.error.message); });
+              supabaseClient.from('transactions').update({ cards: updatedCards, total: newTotal }).eq('id', txId).then(r => { if (r.error) alert(r.error.message); });
               return newTxs.map(t => t.id === txId ? { ...t, cards: updatedCards, total: newTotal } : t);
             });
           }, []);
@@ -135,7 +138,7 @@
             if (!tx) return;
             const newStatus = tx.status === 'cancelled' ? 'active' : 'cancelled';
             try {
-              const { data, error } = await supabase.from('transactions').update({ status: newStatus }).eq('id', txId).select();
+              const { data, error } = await supabaseClient.from('transactions').update({ status: newStatus }).eq('id', txId).select();
               if (error) throw error;
               setTransactions(prev => prev.map(t => t.id === txId ? data[0] : t));
             } catch (e) { alert("Error: " + e.message); }
