@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application de Suivi de Transactions</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de React et ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Chargement de Babel pour transpiler le JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <!-- C'est ici que notre application React sera injectée -->
+    <div id="root"></div>
+
+    <!-- Notre code d'application React -->
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext, useMemo, useCallback } = React;
+
+        // --- Configuration et client Supabase ---
+        let supabase; 
+        const supabaseUrl = "https://pnnmxmfstynzyhvdfdyw.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubm14bWZzdHluenlodmRmZHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTU1NjQsImV4cCI6MjA2ODg3MTU2NH0.fzuomyiBGqk07noz_qW0dmZAqg3eulpXQiczoE26DWU";
+
+        // --- Dictionnaire de Traductions (i18n) ---
+        const translations = {
+          fr: {
+            'nav.search': 'Recherche & Panier', 'nav.transactions': 'Transactions', 'nav.balance': 'Balances', 'nav.people': 'Personnes', 'loading': 'Chargement des données...', 'db_error': 'Impossible de se connecter à la base de données.', 'search.title': 'Recherche de Cartes', 'search.placeholder': 'Entrez un nom de carte... (utilisez " " pour une recherche exacte)', 'search.button.loading': 'Recherche...', 'search.button.default': 'Chercher', 'search.error': 'Carte non trouvée.', 'search.no_results': "Les résultats s'afficheront ici.", 'search.add_to_cart': 'Ajouter au Panier', 'cart.title': 'Panier', 'cart.empty': 'Votre panier est vide.', 'cart.buyer': 'Acheteur', 'cart.seller': 'Vendeur', 'cart.total': 'Total', 'cart.record_transaction': 'Enregistrer la Transaction', 'cart.validation_error': 'Veuillez sélectionner un acheteur, un vendeur et au moins une carte.', 'transactions.title': 'Historique des Transactions', 'transactions.filters.buyer': 'Acheteur', 'transactions.filters.seller': 'Vendeur', 'transactions.filters.start_date': 'Date de début', 'transactions.filters.end_date': 'Date de fin', 'transactions.filters.all': 'Tous', 'transactions.show_cancelled': 'Afficher les transactions annulées', 'transactions.no_results': 'Aucune transaction trouvée.', 'transactions.table.date': 'Date', 'transactions.table.buyer': 'Acheteur', 'transactions.table.seller': 'Vendeur', 'transactions.table.card': 'Carte', 'transactions.table.set': 'Set', 'transactions.table.market_price': 'Prix Marché', 'transactions.table.final_price': 'Prix Final', 'transactions.table.total': 'Total', 'transactions.table.actions': 'Actions', 'balance.title': 'Matrice des Balances', 'balance.add_payment': 'Ajouter un paiement', 'balance.description': "Ce tableau montre le solde net. Une valeur positive dans la case (A, B) signifie que A doit de l'argent à B.", 'balance.buyer_col': '↓ Acheteur / Vendeur →', 'manual_payment.title': 'Enregistrer un paiement manuel', 'manual_payment.payer': 'Qui paie ?', 'manual_payment.receiver': 'Qui reçoit ?', 'manual_payment.amount': 'Montant (€)', 'manual_payment.description': 'Description', 'manual_payment.default_description': 'Remboursement', 'manual_payment.cancel': 'Annuler', 'manual_payment.save': 'Enregistrer', 'manual_payment.validation_error': 'Veuillez remplir tous les champs.', 'people.title': "Gérer les Personnes", 'people.add_person': "Ajouter une personne", 'people.new_person_placeholder': "Nom de la nouvelle personne", 'people.add_button': "Ajouter", 'people.current_list': "Liste actuelle",
+          },
+        };
+
+        const LanguageContext = createContext();
+        const useTranslation = () => {
+            const context = useContext(LanguageContext);
+            if (!context) throw new Error('useTranslation must be used within a LanguageProvider');
+            const { language, setLanguage } = context;
+            const t = useCallback((key) => translations[language]?.[key] || key, [language]);
+            return { t, language, setLanguage };
+        };
+        const LanguageProvider = ({ children }) => {
+            const [language, setLanguage] = useState('fr');
+            const value = useMemo(() => ({ language, setLanguage }), [language]);
+            return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+        };
+
+        const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+        const ShoppingCartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>;
+        const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
+        const UsersIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
+        const Trash2Icon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
+        const PlusCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>;
+        const ScaleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16.5l4-4-4-4"></path><path d="M8 7.5l-4 4 4 4"></path><path d="M2 11.5h20"></path><path d="M12 3v18"></path></svg>;
+        const ExternalLinkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block ml-1 opacity-60"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>;
+        const WarningIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block ml-1 text-yellow-500"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+        const UndoIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>;
+
+        function App() {
+          const [people, setPeople] = useState([]);
+          const [transactions, setTransactions] = useState([]);
+          const [cart, setCart] = useState([]);
+          const [currentView, setCurrentView] = useState('search');
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
+          const { t } = useTranslation();
+
+          useEffect(() => {
+            const initializeAndFetch = async () => {
+              setIsLoading(true);
+              setError(null);
+              try {
+                if (!supabase) {
+                  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+                  supabase = createClient(supabaseUrl, supabaseKey);
+                }
+                const { data: peopleData, error: peopleError } = await supabase.from('people').select('*');
+                if (peopleError) throw peopleError;
+                setPeople(peopleData);
+                const { data: transactionsData, error: transactionsError } = await supabase.from('transactions').select('*');
+                if (transactionsError) throw transactionsError;
+                setTransactions(transactionsData);
+              } catch (err) {
+                console.error("Erreur d'initialisation:", err.message);
+                setError(t('db_error'));
+              } finally {
+                setIsLoading(false);
+              }
+            };
+            initializeAndFetch();
+          }, [t]);
+
+          const addToCart = useCallback((card) => { setCart(prev => [...prev, { ...card, finalPrice: card.price || 0, cartItemId: Date.now() + Math.random() }]); }, []);
+          const removeFromCart = useCallback((id) => { setCart(prev => prev.filter(item => item.cartItemId !== id)); }, []);
+          const updateCartItemPrice = useCallback((id, price) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, finalPrice: price } : item)); }, []);
+          const addTransaction = useCallback(async (tx) => {
+            try {
+              const { data, error } = await supabase.from('transactions').insert([tx]).select();
+              if (error) throw error;
+              setTransactions(prev => [...prev, data[0]]);
+              setCart([]);
+              setCurrentView('transactions');
+            } catch (e) { alert("Error: " + e.message); }
+          }, []);
+          const addPerson = useCallback(async (name) => {
+            if (name && !people.find(p => p.name === name)) {
+              try {
+                const { data, error } = await supabase.from('people').insert([{ name }]).select();
+                if (error) throw error;
+                setPeople(prev => [...prev, data[0]]);
+              } catch (e) { alert("Error: " + e.message); }
+            }
+          }, [people]);
+          const removePerson = useCallback(async (id) => {
+            try {
+              const { error } = await supabase.from('people').delete().eq('id', id);
+              if (error) throw error;
+              setPeople(prev => prev.filter(p => p.id !== id));
+            } catch (e) { alert("Error: " + e.message); }
+          }, []);
+          const updateTransactionCardPrice = useCallback(async (txId, itemId, price) => {
+            setTransactions(prev => {
+              const newTxs = [...prev];
+              const tx = newTxs.find(t => t.id === txId);
+              if (!tx) return prev;
+              const updatedCards = tx.cards.map(c => c.cartItemId === itemId ? { ...c, finalPrice: parseFloat(price) || 0 } : c);
+              const newTotal = updatedCards.reduce((sum, c) => sum + (c.finalPrice || 0), 0);
+              supabase.from('transactions').update({ cards: updatedCards, total: newTotal }).eq('id', txId).then(r => { if (r.error) alert(r.error.message); });
+              return newTxs.map(t => t.id === txId ? { ...t, cards: updatedCards, total: newTotal } : t);
+            });
+          }, []);
+          const toggleTransactionStatus = useCallback(async (txId) => {
+            const tx = transactions.find(t => t.id === txId);
+            if (!tx) return;
+            const newStatus = tx.status === 'cancelled' ? 'active' : 'cancelled';
+            try {
+              const { data, error } = await supabase.from('transactions').update({ status: newStatus }).eq('id', txId).select();
+              if (error) throw error;
+              setTransactions(prev => prev.map(t => t.id === txId ? data[0] : t));
+            } catch (e) { alert("Error: " + e.message); }
+          }, [transactions]);
+
+          const renderView = () => {
+            if (isLoading) return <div className="text-center p-10">{t('loading')}</div>;
+            if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
+            const peopleNames = people.map(p => p.name);
+            switch (currentView) {
+              case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, people: peopleNames, addTransaction }} />;
+              case 'transactions': return <TransactionsView {...{ transactions, updateTransactionCardPrice, toggleTransactionStatus }} />;
+              case 'balance': return <BalanceMatrix {...{ transactions, people: peopleNames, addTransaction }} />;
+              case 'people': return <PeopleManager {...{ people, addPerson, removePerson }} />;
+              default: return <div>Welcome</div>;
+            }
+          };
+
+          return (
+            <div className="bg-white text-gray-800 h-screen font-sans flex overflow-hidden">
+              <nav className="p-4 bg-white border-r border-gray-200 flex flex-col items-center space-y-4 shrink-0 shadow-md">
+                <button onClick={() => setCurrentView('search')} className={`p-3 rounded-lg ${currentView === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title={t('nav.search')}><SearchIcon /></button>
+                <button onClick={() => setCurrentView('transactions')} className={`p-3 rounded-lg ${currentView === 'transactions' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title={t('nav.transactions')}><ListIcon /></button>
+                <button onClick={() => setCurrentView('balance')} className={`p-3 rounded-lg ${currentView === 'balance' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title={t('nav.balance')}><ScaleIcon /></button>
+                <button onClick={() => setCurrentView('people')} className={`p-3 rounded-lg ${currentView === 'people' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title={t('nav.people')}><UsersIcon /></button>
+                <div className="mt-auto pt-4 border-t border-gray-200"><LanguageSelector /></div>
+              </nav>
+              <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">{renderView()}</main>
+            </div>
+          );
+        }
+
+        const AppWrapper = () => <LanguageProvider><App /></LanguageProvider>;
+        
+        const LanguageSelector = React.memo(() => {
+            const { language, setLanguage } = useTranslation();
+            const languages = [{ code: 'fr', flag: '🇫🇷' }, { code: 'en', flag: '🇬🇧' }, { code: 'it', flag: '🇮🇹' }, { code: 'de', flag: '🇩🇪' }];
+            return (
+                <div className="flex flex-col items-center space-y-2">
+                    {languages.map(lang => <button key={lang.code} onClick={() => setLanguage(lang.code)} className={`p-2 rounded-full text-xl transition-transform duration-200 ${language === lang.code ? 'bg-blue-100 scale-110' : 'hover:bg-gray-100'}`} title={lang.code.toUpperCase()}>{lang.flag}</button>)}
+                </div>
+            );
+        });
+
+        const SearchAndCartView = React.memo(({ cart, addToCart, removeFromCart, updateCartItemPrice, people, addTransaction }) => {
+          const [searchResults, setSearchResults] = useState([]);
+          const [query, setQuery] = useState('');
+          const [isLoading, setIsLoading] = useState(false);
+          const [error, setError] = useState(null);
+          const { t } = useTranslation();
+          const handleSearch = useCallback(async () => {
+            if (!query) return;
+            setIsLoading(true); setError(null); setSearchResults([]);
+            try {
+              let scryfallQuery;
+              const trimmedQuery = query.trim();
+              if (trimmedQuery.startsWith('"') && trimmedQuery.endsWith('"')) {
+                const exactQuery = trimmedQuery.substring(1, trimmedQuery.length - 1);
+                scryfallQuery = `!"${exactQuery}" unique:prints`;
+              } else {
+                scryfallQuery = `${trimmedQuery} unique:prints`;
+              }
+              const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(scryfallQuery)}`);
+              if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.details || t('search.error'));
+              }
+              const data = await response.json();
+              const processedResults = data.data.flatMap(card => 
+                card.finishes.map(finish => ({
+                  id: card.id, name: card.name, set_name: card.set_name, set: card.set, collector_number: card.collector_number, rarity: card.rarity, finish: finish,
+                  price: finish === 'foil' ? card.prices.eur_foil : card.prices.eur,
+                  image_uri: card.image_uris?.small || 'https://placehold.co/146x204/e0e7ff/3730a3?text=No+Image',
+                  scryfall_uri: card.scryfall_uri, purchase_uris: card.purchase_uris
+                }))
+              );
+              setSearchResults(processedResults);
+            } catch (err) { setError(err.message); }
+            setIsLoading(false);
+          }, [query, t]);
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <h1 className="text-3xl font-bold text-blue-700 mb-4">{t('search.title')}</h1>
+                <div className="flex gap-2 mb-4">
+                  <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} placeholder={t('search.placeholder')} className="flex-grow bg-white border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"/>
+                  <button onClick={handleSearch} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg disabled:bg-blue-800 disabled:cursor-not-allowed transition-colors">{isLoading ? t('search.button.loading') : t('search.button.default')}</button>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                  {error && <p className="text-red-600 text-center">{error}</p>}
+                  {!isLoading && searchResults.length === 0 && !error && <p className="text-gray-500 text-center py-12">{t('search.no_results')}</p>}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {searchResults.map(card => (
+                      <div key={`${card.id}-${card.finish}`} className="bg-gray-50 rounded-lg p-2 flex flex-col items-center text-center border border-gray-200 hover:shadow-md transition-shadow">
+                        <a href={card.scryfall_uri} target="_blank" rel="noopener noreferrer"><img src={card.image_uri} alt={card.name} className="rounded-md w-full mb-2" /></a>
+                        <h3 className="font-semibold text-sm text-gray-900">{card.name} {card.finish === 'foil' && <span className="text-blue-500">(Foil)</span>}</h3>
+                        <p className="text-xs text-gray-500">{card.set_name}</p>
+                        <p className="font-bold text-blue-600 text-sm my-1">{card.price ? `${card.price} €` : 'N/A'}</p>
+                        <button onClick={() => addToCart(card)} className="bg-blue-500 text-white text-xs w-full py-1 rounded-md mt-auto hover:bg-blue-600 transition-colors">{t('search.add_to_cart')}</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="lg:sticky lg:top-8 h-fit">
+                <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center"><ShoppingCartIcon /> <span className="ml-2">{t('cart.title')}</span></h2>
+                <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} people={people} addTransaction={addTransaction} />
+              </div>
+            </div>
+          );
+        });
+
+        const Cart = React.memo(({ cart, removeFromCart, updateCartItemPrice, people, addTransaction }) => {
+            const [buyer, setBuyer] = useState(people[0] || '');
+            const [seller, setSeller] = useState(people[1] || '');
+            const { t } = useTranslation();
+            useEffect(() => {
+                if (people.length > 0 && (!buyer || !people.includes(buyer))) setBuyer(people[0]);
+                if (people.length > 1 && (!seller || !people.includes(seller))) setSeller(people[1]);
+            }, [people, buyer, seller]);
+            const handleRecordTransaction = useCallback(() => {
+                if (!buyer || !seller || cart.length === 0) {
+                    alert(t('cart.validation_error'));
+                    return;
+                }
+                const newTransaction = {
+                    buyer, seller,
+                    cards: cart.map(c => ({ ...c, marketPrice: parseFloat(c.price) || 0, finalPrice: parseFloat(c.finalPrice) || 0 })),
+                    total: cart.reduce((sum, c) => sum + (parseFloat(c.finalPrice) || 0), 0),
+                    status: 'active'
+                };
+                addTransaction(newTransaction);
+            }, [buyer, seller, cart, addTransaction, t]);
+            const total = useMemo(() => cart.reduce((sum, c) => sum + (parseFloat(c.finalPrice) || 0), 0).toFixed(2), [cart]);
+            return (
+                <div className="bg-white rounded-lg p-4 flex flex-col border border-gray-200 shadow-sm max-h-[calc(100vh-8rem)]">
+                    <div className="flex-grow overflow-y-auto mb-4 pr-2">
+                        {cart.length === 0 ? <p className="text-gray-500 text-center mt-8">{t('cart.empty')}</p> :
+                            <ul className="space-y-3">
+                                {cart.map(card => (
+                                    <li key={card.cartItemId} className="flex items-center justify-between bg-gray-100 p-2 rounded-lg">
+                                        <div className="text-sm flex-grow">
+                                            <p className="font-semibold text-gray-900">{card.name} {card.finish === 'foil' && <span className="text-blue-500">(Foil)</span>}</p>
+                                            <p className="text-xs text-gray-500">{card.set_name}</p>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <input type="number" value={card.finalPrice} onChange={(e) => updateCartItemPrice(card.cartItemId, e.target.value)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono text-gray-900" step="0.01" />
+                                            <span className="ml-1 mr-2 text-gray-600">€</span>
+                                            <button onClick={() => removeFromCart(card.cartItemId)} className="text-red-500 hover:text-red-700"><Trash2Icon /></button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        }
+                    </div>
+                    {cart.length > 0 && (
+                        <div className="border-t border-gray-200 pt-4 shrink-0">
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700">{t('cart.buyer')}</label>
+                                    <select value={buyer} onChange={e => setBuyer(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                                        {people.map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700">{t('cart.seller')}</label>
+                                    <select value={seller} onChange={e => setSeller(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                                        {people.map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="text-right font-bold text-xl mb-4 text-gray-900">{t('cart.total')}: {total} €</div>
+                            <button onClick={handleRecordTransaction} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors">{t('cart.record_transaction')}</button>
+                        </div>
+                    )}
+                </div>
+            );
+        });
+
+        const TransactionsView = React.memo(({ transactions, updateTransactionCardPrice, toggleTransactionStatus }) => {
+          const [showCancelled, setShowCancelled] = useState(false);
+          const [filters, setFilters] = useState({ buyer: 'all', seller: 'all', startDate: '', endDate: '' });
+          const { t } = useTranslation();
+          const handleFilterChange = (e) => { setFilters(prev => ({ ...prev, [e.target.name]: e.target.value })); };
+          const allParticipants = useMemo(() => [...new Set((transactions || []).flatMap(tx => [tx.buyer, tx.seller]))].sort(),[transactions]);
+          const filteredTransactions = useMemo(() => (transactions || [])
+            .filter(tx => showCancelled || tx.status !== 'cancelled')
+            .filter(tx => filters.buyer === 'all' || tx.buyer === filters.buyer)
+            .filter(tx => filters.seller === 'all' || tx.seller === filters.seller)
+            .filter(tx => {
+                if (!filters.startDate && !filters.endDate) return true;
+                const txDate = new Date(tx.created_at); txDate.setHours(0,0,0,0);
+                const startDate = filters.startDate ? new Date(filters.startDate) : null;
+                const endDate = filters.endDate ? new Date(filters.endDate) : null;
+                if (startDate && txDate < startDate) return false;
+                if (endDate && txDate > endDate) return false;
+                return true;
+            }), [transactions, showCancelled, filters]);
+          return (
+            <div>
+              <h1 className="text-3xl font-bold text-blue-700 mb-6">{t('transactions.title')}</h1>
+              <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                  <div>
+                      <label className="text-sm font-medium text-gray-700">{t('transactions.filters.buyer')}</label>
+                      <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                          <option value="all">{t('transactions.filters.all')}</option>
+                          {allParticipants.map((p, i) => <option key={`${p}-${i}`} value={p}>{p}</option>)}
+                      </select>
+                  </div>
+                  <div>
+                      <label className="text-sm font-medium text-gray-700">{t('transactions.filters.seller')}</label>
+                      <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                          <option value="all">{t('transactions.filters.all')}</option>
+                          {allParticipants.map((p, i) => <option key={`${p}-${i}`} value={p}>{p}</option>)}
+                      </select>
+                  </div>
+                  <div>
+                      <label className="text-sm font-medium text-gray-700">{t('transactions.filters.start_date')}</label>
+                      <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
+                  </div>
+                  <div>
+                      <label className="text-sm font-medium text-gray-700">{t('transactions.filters.end_date')}</label>
+                      <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
+                  </div>
+                  <div className="flex items-center space-x-2 md:col-span-4 justify-end">
+                      <input type="checkbox" id="showCancelled" checked={showCancelled} onChange={() => setShowCancelled(!showCancelled)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      <label htmlFor="showCancelled" className="text-sm text-gray-600">{t('transactions.show_cancelled')}</label>
+                  </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                {filteredTransactions.length === 0 ? <p className="text-gray-500 text-center py-8">{t('transactions.no_results')}</p> :
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3">{t('transactions.table.date')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.buyer')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.seller')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.card')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.set')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.market_price')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.final_price')}</th>
+                          <th className="px-4 py-3 text-right">{t('transactions.table.total')}</th>
+                          <th className="px-4 py-3">{t('transactions.table.actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredTransactions.slice().reverse().map(tx => {
+                          const isCancelled = tx.status === 'cancelled';
+                          return (
+                            <React.Fragment key={tx.id}>
+                              {(tx.cards || []).map((c, index) => {
+                                const detailText = c.finish === 'manual' ? c.name : `${c.name} ${c.finish === 'foil' ? '(Foil)' : ''}`;
+                                const marketPriceDisplay = c.purchase_uris?.cardmarket ? <a href={c.purchase_uris.cardmarket} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'} <ExternalLinkIcon /></a> : <span>{typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'}</span>;
+                                return (
+                                  <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 line-through bg-gray-100' : 'hover:bg-gray-50'}`}>
+                                    {index === 0 && (<>
+                                        <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('fr-FR')}</td>
+                                        <td className="px-4 py-4" rowSpan={tx.cards.length}>{tx.buyer}</td>
+                                        <td className="px-4 py-4" rowSpan={tx.cards.length}>{tx.seller}</td>
+                                    </>)}
+                                    <td className="px-4 py-4"><a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{detailText} {c.scryfall_uri && <ExternalLinkIcon />}</a></td>
+                                    <td className="px-4 py-4 text-gray-600">{c.set || c.set_name}</td>
+                                    <td className="px-4 py-4 font-mono">{marketPriceDisplay}</td>
+                                    <td className="px-4 py-4">
+                                      <div className="flex items-center">
+                                        <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCardPrice(tx.id, c.cartItemId, e.target.value)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono" step="0.01" disabled={isCancelled} />
+                                        <span className="ml-1 text-gray-600">€</span>
+                                      </div>
+                                    </td>
+                                    {index === 0 && (<>
+                                        <td className="px-4 py-4 text-right font-mono" rowSpan={tx.cards.length}>{typeof tx.total === 'number' ? tx.total.toFixed(2) : '0.00'} €</td>
+                                        <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100' : 'text-red-500 hover:bg-red-100'}`} title={isCancelled ? 'Restore' : 'Cancel'}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
+                                    </>)}
+                                  </tr>
+                                );
+                              })}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+          );
+        });
+
+        const BalanceMatrix = React.memo(({ transactions, people, addTransaction }) => {
+            const [showForm, setShowForm] = useState(false);
+            const { t } = useTranslation();
+            const allParticipants = useMemo(() => {
+                const participants = new Set(people);
+                (transactions || []).filter(tx => tx.status !== 'cancelled').forEach(tx => {
+                    if(tx.buyer) participants.add(tx.buyer);
+                    if(tx.seller) participants.add(tx.seller);
+                });
+                return [...participants].sort();
+            }, [transactions, people]);
+            const balances = useMemo(() => {
+                const bal = {};
+                allParticipants.forEach(p1 => {
+                    bal[p1] = {};
+                    allParticipants.forEach(p2 => { if (p1 !== p2) bal[p1][p2] = 0; });
+                });
+                (transactions || []).filter(tx => tx.status !== 'cancelled').forEach(tx => {
+                    if (tx.buyer && tx.seller && tx.buyer !== tx.seller) {
+                        bal[tx.buyer][tx.seller] = (bal[tx.buyer][tx.seller] || 0) + tx.total;
+                    }
+                });
+                return bal;
+            }, [transactions, allParticipants]);
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-3xl font-bold text-blue-700">{t('balance.title')}</h1>
+                        <button onClick={() => setShowForm(true)} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"><PlusCircleIcon /> {t('balance.add_payment')}</button>
+                    </div>
+                    {showForm && <ManualTransactionForm people={people} addTransaction={addTransaction} onClose={() => setShowForm(false)} />}
+                    <p className="text-sm text-gray-600 mb-4">{t('balance.description')}</p>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm overflow-x-auto">
+                        <table className="w-full text-sm text-center">
+                            <thead>
+                                <tr>
+                                    <th className="p-2 border-b border-r border-gray-200 text-gray-600">{t('balance.buyer_col')}</th>
+                                    {allParticipants.map(p => <th key={p} className={`p-2 border-b border-gray-200 ${!people.includes(p) ? 'text-gray-400 italic' : 'text-gray-800'}`}>{p} {!people.includes(p) && <WarningIcon />}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allParticipants.map(buyer => (
+                                    <tr key={buyer}>
+                                        <th className={`p-2 border-r border-gray-200 text-left ${!people.includes(buyer) ? 'text-gray-400 italic' : 'text-gray-800'}`}>{buyer} {!people.includes(buyer) && <WarningIcon />}</th>
+                                        {allParticipants.map(seller => {
+                                            if (buyer === seller) return <td key={seller} className="p-2 bg-gray-100"></td>;
+                                            const netBalance = (balances[buyer]?.[seller] || 0) - (balances[seller]?.[buyer] || 0);
+                                            const colorClass = netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-500';
+                                            return <td key={seller} className={`p-2 border-t border-gray-200 font-mono font-bold ${colorClass}`}>{netBalance.toFixed(2)} €</td>;
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        });
+
+        const ManualTransactionForm = React.memo(({ people, addTransaction, onClose }) => {
+            const { t } = useTranslation();
+            const [payer, setPayer] = useState(people[0] || '');
+            const [receiver, setReceiver] = useState(people[1] || '');
+            const [amount, setAmount] = useState('');
+            const [description, setDescription] = useState(t('manual_payment.default_description'));
+            const handleSubmit = useCallback((e) => {
+                e.preventDefault();
+                const finalAmount = parseFloat(amount);
+                if (!payer || !receiver || !finalAmount || finalAmount <= 0) {
+                    alert(t('manual_payment.validation_error'));
+                    return;
+                }
+                addTransaction({
+                    buyer: receiver, seller: payer,
+                    cards: [{ id: `manual_${Date.now()}`, name: description, finish: 'manual', marketPrice: finalAmount, finalPrice: finalAmount, cartItemId: `manual_item_${Date.now()}` }],
+                    total: finalAmount, status: 'active'
+                });
+                onClose();
+            }, [payer, receiver, amount, description, addTransaction, onClose, t]);
+            return (
+                <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200 shadow-sm">
+                    <h2 className="text-xl font-semibold mb-4 text-blue-700">{t('manual_payment.title')}</h2>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">{t('manual_payment.payer')}</label>
+                            <select value={payer} onChange={e => setPayer(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                                {people.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">{t('manual_payment.receiver')}</label>
+                            <select value={receiver} onChange={e => setReceiver(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                                {people.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">{t('manual_payment.amount')}</label>
+                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} step="0.01" className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">{t('manual_payment.description')}</label>
+                            <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900" />
+                        </div>
+                        <div className="md:col-span-4 flex justify-end gap-4 mt-2">
+                            <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">{t('manual_payment.cancel')}</button>
+                            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">{t('manual_payment.save')}</button>
+                        </div>
+                    </form>
+                </div>
+            );
+        });
+
+        const PeopleManager = React.memo(({ people, addPerson, removePerson }) => {
+          const [newName, setNewName] = useState('');
+          const { t } = useTranslation();
+          const handleAdd = () => { addPerson(newName); setNewName(''); };
+          return (
+            <div>
+              <h1 className="text-3xl font-bold text-blue-700 mb-6">{t('people.title')}</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-900">{t('people.add_person')}</h2>
+                  <div className="flex gap-2">
+                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t('people.new_person_placeholder')} className="flex-grow bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"/>
+                    <button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">{t('people.add_button')}</button>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-900">{t('people.current_list')}</h2>
+                  <ul className="space-y-2">
+                    {(people || []).map(p => (
+                      <li key={p.id} className="flex justify-between items-center bg-gray-100 p-2 rounded-lg">
+                        <span className="text-gray-800">{p.name}</span>
+                        <button onClick={() => removePerson(p.id)} className="text-red-500 hover:text-red-700"><Trash2Icon /></button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        });
+
+        // --- Rendu final de l'application dans le DOM ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AppWrapper />);
+
+    </script>
+</body>
+</html>
