@@ -33,10 +33,12 @@
         const PlusCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>;
         const ScaleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16.5l4-4-4-4"></path><path d="M8 7.5l-4 4 4 4"></path><path d="M2 11.5h20"></path><path d="M12 3v18"></path></svg>;
         const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+        const GridIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>;
         const ExternalLinkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block ml-1 opacity-60"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>;
         const UndoIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>;
         const LogOutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
         const ArrowRightIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
+        const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
 
         // --- Auth Component ---
         function Auth({ supabase }) {
@@ -193,11 +195,6 @@
             setProfiles(prevProfiles => prevProfiles.map(p => p.id === updatedProfile.id ? updatedProfile : p));
           };
 
-          // --- Cart and Transaction Callbacks ---
-          const addToCart = useCallback((card) => { setCart(prev => [...prev, { ...card, finalPrice: card.price || 0, cartItemId: Date.now() + Math.random() }]); }, []);
-          const removeFromCart = useCallback((id) => { setCart(prev => prev.filter(item => item.cartItemId !== id)); }, []);
-          const updateCartItemPrice = useCallback((id, price) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, finalPrice: price } : item)); }, []);
-
           const addTransaction = useCallback(async (tx) => {
             try {
               const { data, error } = await supabaseClient.from('transactions').insert([tx]).select();
@@ -235,13 +232,18 @@
             if (isLoading) return <div className="text-center p-10">Loading data...</div>;
             if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
             switch (currentView) {
-              case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, profiles, addTransaction }} />;
+              case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, profiles, addTransaction, currentUserProfile }} />;
               case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCardPrice, toggleTransactionStatus }} />;
-              case 'balance': return <BalanceDashboard {...{ transactions, profiles, addTransaction }} />;
+              case 'balance': return <BalanceDashboard {...{ transactions, profiles, addTransaction, currentUserProfile }} />;
+              case 'matrix': return <BalanceMatrix {...{ transactions, profiles }} />;
               case 'profile': return <ProfileView user={user} profile={currentUserProfile} onProfileUpdate={handleProfileUpdate} />;
               default: return <div>Welcome</div>;
             }
           };
+          
+          const addToCart = useCallback((card) => { setCart(prev => [...prev, { ...card, finalPrice: card.price || 0, cartItemId: Date.now() + Math.random() }]); }, []);
+          const removeFromCart = useCallback((id) => { setCart(prev => prev.filter(item => item.cartItemId !== id)); }, []);
+          const updateCartItemPrice = useCallback((id, price) => { setCart(prev => prev.map(item => item.cartItemId === id ? { ...item, finalPrice: price } : item)); }, []);
 
           return (
             <div className="bg-white text-gray-800 h-screen font-sans flex overflow-hidden">
@@ -250,6 +252,7 @@
                     <button onClick={() => setCurrentView('search')} className={`p-3 rounded-lg ${currentView === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Search & Cart"><SearchIcon /></button>
                     <button onClick={() => setCurrentView('transactions')} className={`p-3 mt-2 rounded-lg ${currentView === 'transactions' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Transactions"><ListIcon /></button>
                     <button onClick={() => setCurrentView('balance')} className={`p-3 mt-2 rounded-lg ${currentView === 'balance' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Balances"><ScaleIcon /></button>
+                    <button onClick={() => setCurrentView('matrix')} className={`p-3 mt-2 rounded-lg ${currentView === 'matrix' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Matrix"><GridIcon /></button>
                     <button onClick={() => setCurrentView('profile')} className={`p-3 mt-2 rounded-lg ${currentView === 'profile' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Profile"><UserIcon /></button>
                 </div>
                 <div className="shrink-0 text-center">
@@ -355,7 +358,7 @@
             return debouncedValue;
         }
 
-        const SearchAndCartView = React.memo(({ cart, addToCart, removeFromCart, updateCartItemPrice, profiles, addTransaction }) => {
+        const SearchAndCartView = React.memo(({ cart, addToCart, removeFromCart, updateCartItemPrice, profiles, addTransaction, currentUserProfile }) => {
           const [searchResults, setSearchResults] = useState([]);
           const [query, setQuery] = useState('');
           const [isLoading, setIsLoading] = useState(false);
@@ -410,22 +413,27 @@
               </div>
               <div className="lg:sticky lg:top-8 h-fit">
                 <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center"><span className="ml-2">Cart</span></h2>
-                <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} profiles={profiles} addTransaction={addTransaction} />
+                <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} profiles={profiles} addTransaction={addTransaction} currentUserProfile={currentUserProfile} />
               </div>
             </div>
           );
         });
 
-        const Cart = React.memo(({ cart, removeFromCart, updateCartItemPrice, profiles, addTransaction }) => {
+        const Cart = React.memo(({ cart, removeFromCart, updateCartItemPrice, profiles, addTransaction, currentUserProfile }) => {
             const [buyerId, setBuyerId] = useState('');
-            const [sellerId, setSellerId] = useState('');
+            const [sellerId, setSellerId] = useState(currentUserProfile?.id || '');
 
             useEffect(() => {
-                if (profiles.length > 0) {
-                    if (!buyerId) setBuyerId(profiles[0].id);
-                    if (!sellerId && profiles.length > 1) setSellerId(profiles[1].id);
+                if (!currentUserProfile) return;
+                setSellerId(currentUserProfile.id);
+
+                const otherUsers = profiles.filter(p => p.id !== currentUserProfile.id);
+                if (otherUsers.length > 0 && !buyerId) {
+                    setBuyerId(otherUsers[0].id);
+                } else if (otherUsers.length === 0) {
+                    setBuyerId(currentUserProfile.id);
                 }
-            }, [profiles, buyerId, sellerId]);
+            }, [profiles, currentUserProfile, buyerId]);
 
             const handleRecordTransaction = useCallback(() => {
                 if (!buyerId || !sellerId || cart.length === 0) {
@@ -434,6 +442,15 @@
                 if (buyerId === sellerId) {
                     alert("Buyer and Seller cannot be the same person."); return;
                 }
+                
+                // Permission check on client-side
+                const isAdmin = currentUserProfile?.role === 'admin';
+                const is_involved = currentUserProfile?.id === buyerId || currentUserProfile?.id === sellerId;
+                if (!isAdmin && !is_involved) {
+                    alert("You can only record transactions where you are the buyer or the seller.");
+                    return;
+                }
+
                 const newTransaction = {
                     buyer: buyerId, seller: sellerId,
                     cards: cart.map(c => ({ ...c, marketPrice: parseFloat(c.price) || 0, finalPrice: parseFloat(c.finalPrice) || 0 })),
@@ -441,7 +458,7 @@
                     status: 'active'
                 };
                 addTransaction(newTransaction);
-            }, [buyerId, sellerId, cart, addTransaction]);
+            }, [buyerId, sellerId, cart, addTransaction, currentUserProfile]);
 
             const total = useMemo(() => cart.reduce((sum, c) => sum + (parseFloat(c.finalPrice) || 0), 0).toFixed(2), [cart]);
 
@@ -548,9 +565,104 @@
             );
         });
 
-        const BalanceDashboard = React.memo(({ transactions, profiles, addTransaction }) => {
+        const BalanceDashboard = React.memo(({ transactions, profiles, addTransaction, currentUserProfile }) => {
             const [showForm, setShowForm] = useState(false);
             
+            const { debts, credits, profilesById } = useMemo(() => {
+                if (!currentUserProfile) return { debts: [], credits: [], profilesById: {} };
+
+                const activeTxs = (transactions || []).filter(tx => tx.status !== 'cancelled');
+                
+                const profsById = profiles.reduce((acc, p) => {
+                    acc[p.id] = p;
+                    return acc;
+                }, {});
+
+                const balances = {};
+                profiles.forEach(p1 => {
+                    balances[p1.id] = {};
+                    profiles.forEach(p2 => { if (p1.id !== p2.id) balances[p1.id][p2.id] = 0; });
+                });
+
+                activeTxs.forEach(tx => {
+                    if (tx.buyer && tx.seller && tx.buyer !== tx.seller && balances[tx.buyer] && balances[tx.seller]) {
+                        balances[tx.buyer][tx.seller] = (balances[tx.buyer][tx.seller] || 0) + tx.total;
+                    }
+                });
+
+                const myDebts = [];
+                const myCredits = [];
+
+                profiles.forEach(otherUser => {
+                    if (otherUser.id === currentUserProfile.id) return;
+
+                    const iOweOther = balances[currentUserProfile.id]?.[otherUser.id] || 0;
+                    const otherOwesMe = balances[otherUser.id]?.[currentUserProfile.id] || 0;
+                    const netBalance = iOweOther - otherOwesMe;
+
+                    if (netBalance > 0) {
+                        myDebts.push({ to: otherUser.id, amount: netBalance });
+                    } else if (netBalance < 0) {
+                        myCredits.push({ from: otherUser.id, amount: -netBalance });
+                    }
+                });
+
+                return { debts: myDebts, credits: myCredits, profilesById: profsById };
+            }, [transactions, profiles, currentUserProfile]);
+
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-3xl font-bold text-blue-700">My Balances</h1>
+                        <button onClick={() => setShowForm(true)} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"><PlusCircleIcon /> Add Payment</button>
+                    </div>
+                    {showForm && <ManualTransactionForm profiles={profiles} addTransaction={addTransaction} onClose={() => setShowForm(false)} currentUserProfile={currentUserProfile} />}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                           <h2 className="text-xl font-semibold text-gray-800 mb-4">I Owe</h2>
+                           {debts.length === 0 ? (
+                               <p className="text-gray-500">You have no outstanding debts.</p>
+                           ) : (
+                               <ul className="space-y-3">
+                                   {debts.map(debt => (
+                                       <li key={debt.to} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                                           <div className="flex items-center gap-3">
+                                               <span className="font-medium text-gray-700">You</span>
+                                               <ArrowRightIcon />
+                                               <span className="font-medium text-gray-700">{profilesById[debt.to]?.nickname || 'Unknown'}</span>
+                                           </div>
+                                           <span className="font-bold text-red-600 text-lg">{debt.amount.toFixed(2)} €</span>
+                                       </li>
+                                   ))}
+                               </ul>
+                           )}
+                        </div>
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                           <h2 className="text-xl font-semibold text-gray-800 mb-4">Owed to Me</h2>
+                           {credits.length === 0 ? (
+                               <p className="text-gray-500">Nobody owes you money.</p>
+                           ) : (
+                               <ul className="space-y-3">
+                                   {credits.map(credit => (
+                                       <li key={credit.from} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                           <div className="flex items-center gap-3">
+                                                <span className="font-medium text-gray-700">{profilesById[credit.from]?.nickname || 'Unknown'}</span>
+                                                <ArrowRightIcon />
+                                                <span className="font-medium text-gray-700">You</span>
+                                           </div>
+                                           <span className="font-bold text-green-600 text-lg">{credit.amount.toFixed(2)} €</span>
+                                       </li>
+                                   ))}
+                               </ul>
+                           )}
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+
+        const BalanceMatrix = React.memo(({ transactions, profiles }) => {
             const { balances, profilesById } = useMemo(() => {
                 const activeTxs = (transactions || []).filter(tx => tx.status !== 'cancelled');
                 
@@ -573,72 +685,49 @@
                 return { balances: bal, profilesById: profsById };
             }, [transactions, profiles]);
 
-            const netBalances = useMemo(() => {
-                const net = {};
-                for (let i = 0; i < profiles.length; i++) {
-                    for (let j = i + 1; j < profiles.length; j++) {
-                        const p1_id = profiles[i].id;
-                        const p2_id = profiles[j].id;
-                        const p1_owes_p2 = balances[p1_id]?.[p2_id] || 0;
-                        const p2_owes_p1 = balances[p2_id]?.[p1_id] || 0;
-                        const netBalance = p1_owes_p2 - p2_owes_p1;
-                        
-                        if (netBalance > 0) { // p1 owes p2
-                            if (!net[p1_id]) net[p1_id] = [];
-                            net[p1_id].push({ to: p2_id, amount: netBalance });
-                        } else if (netBalance < 0) { // p2 owes p1
-                            if (!net[p2_id]) net[p2_id] = [];
-                            net[p2_id].push({ to: p1_id, amount: -netBalance });
-                        }
-                    }
-                }
-                return net;
-            }, [balances, profiles]);
-
             return (
                 <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-3xl font-bold text-blue-700">Balances</h1>
-                        <button onClick={() => setShowForm(true)} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"><PlusCircleIcon /> Add Payment</button>
-                    </div>
-                    {showForm && <ManualTransactionForm profiles={profiles} addTransaction={addTransaction} onClose={() => setShowForm(false)} />}
-                    
-                    <div className="space-y-6">
-                        {profiles.length > 0 ? profiles.map(person => (
-                            <div key={person.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                                <h2 className="text-xl font-semibold text-gray-800 mb-4">{person.nickname}'s Debts</h2>
-                                {(!netBalances[person.id] || netBalances[person.id].length === 0) ? (
-                                    <p className="text-gray-500">This person has no outstanding debts.</p>
-                                ) : (
-                                    <ul className="space-y-3">
-                                        {netBalances[person.id].map(debt => (
-                                            <li key={`${person.id}-${debt.to}`} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-medium text-gray-700">{person.nickname}</span>
-                                                    <ArrowRightIcon />
-                                                    <span className="font-medium text-gray-700">{profilesById[debt.to]?.nickname || 'Unknown'}</span>
-                                                </div>
-                                                <span className="font-bold text-red-600 text-lg">{debt.amount.toFixed(2)} €</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        )) : (
-                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
-                                <p className="text-gray-500">No users found.</p>
-                            </div>
-                        )}
+                    <h1 className="text-3xl font-bold text-blue-700 mb-6">Balance Matrix</h1>
+                    <p className="text-sm text-gray-600 mb-4">This table shows who owes whom. A positive value in cell (Row, Column) means the person in the **Row** owes money to the person in the **Column**.</p>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm overflow-x-auto">
+                        <table className="w-full min-w-[600px] text-sm text-center">
+                            <thead>
+                                <tr>
+                                    <th className="p-3 border-b-2 border-r border-gray-200 text-gray-600 bg-gray-50 sticky left-0 z-10">↓ Owes / Owed to →</th>
+                                    {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-gray-200 text-gray-800 font-semibold">{p.nickname}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {profiles.map(buyer => (
+                                    <tr key={buyer.id}>
+                                        <th className="p-3 border-r border-gray-200 text-left font-semibold text-gray-800 bg-gray-50 sticky left-0 z-10">{buyer.nickname}</th>
+                                        {profiles.map(seller => {
+                                            if (buyer.id === seller.id) return <td key={seller.id} className="p-3 bg-gray-100 border-t border-gray-200"></td>;
+                                            const netBalance = (balances[buyer.id]?.[seller.id] || 0) - (balances[seller.id]?.[buyer.id] || 0);
+                                            const colorClass = netBalance > 0 ? 'text-red-600 bg-red-50' : netBalance < 0 ? 'text-green-600 bg-green-50' : 'text-gray-500';
+                                            return <td key={seller.id} className={`p-3 border-t border-gray-200 font-mono font-bold ${colorClass}`}>{netBalance.toFixed(2)}</td>;
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            );
+            )
         });
 
-        const ManualTransactionForm = React.memo(({ profiles, addTransaction, onClose }) => {
-            const [payerId, setPayerId] = useState(profiles[0]?.id || '');
-            const [receiverId, setReceiverId] = useState(profiles[1]?.id || '');
+        const ManualTransactionForm = React.memo(({ profiles, addTransaction, onClose, currentUserProfile }) => {
+            const [payerId, setPayerId] = useState(currentUserProfile?.id || '');
+            const [receiverId, setReceiverId] = useState('');
             const [amount, setAmount] = useState('');
             const [description, setDescription] = useState('Reimbursement');
+
+            useEffect(() => {
+                const otherUsers = profiles.filter(p => p.id !== currentUserProfile?.id);
+                if(otherUsers.length > 0) {
+                    setReceiverId(otherUsers[0].id);
+                }
+            }, [profiles, currentUserProfile]);
 
             const handleSubmit = useCallback((e) => {
                 e.preventDefault();
