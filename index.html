@@ -43,7 +43,6 @@
         const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
         const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
         const StoreIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 4l9 5.5M3 9.5v10.5h18V9.5M2 20h20M15 13H9v7h6v-7z"></path></svg>;
-        const TheTabLogo = () => <svg width="100" height="28" viewBox="0 0 100 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.2933 0.93335L0.666626 27.3334H5.33329L14.4533 6.42668V27.3334H18.8266V0.93335H12.2933Z" fill="white"/><path d="M38.88 16.48C38.88 22.8 33.6 27.84 26.8267 27.84C20.0533 27.84 14.7733 22.8 14.7733 16.48C14.7733 10.16 20.0533 5.12002 26.8267 5.12002C33.6 5.12002 38.88 10.16 38.88 16.48ZM34.5067 16.48C34.5067 12.5333 31.1467 9.44002 26.8267 9.44002C22.5067 9.44002 19.1467 12.5333 19.1467 16.48C19.1467 20.4267 22.5067 23.52 26.8267 23.52C31.1467 23.52 34.5067 20.4267 34.5067 16.48Z" fill="#3B82F6"/><path d="M43.0667 0.93335H47.44V27.3334H43.0667V0.93335Z" fill="white"/><path d="M68.64 12.4V27.3333H64.2667V12.4L58.24 16.1067L55.8933 12.4L65.92 5.76001H66.9867V27.3333H62.6133V10.4L68.64 12.4Z" fill="#3B82F6"/><path d="M85.0133 0.93335L73.3867 27.3334H78.0533L90.9333 0.93335H85.0133Z" fill="white"/><path d="M99.3333 0.93335H87.7067V27.3334H99.3333V23.0134H92.08V17.8934H98.6667V13.5734H92.08V5.25335H99.3333V0.93335Z" fill="#3B82F6"/></svg>;
 
         // --- Auth Component ---
         function Auth({ supabase }) {
@@ -270,12 +269,13 @@
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
           const [theme, setTheme] = useState(localStorage.getItem('app-theme') || 'light');
+          const [hoveredCard, setHoveredCard] = useState(null);
 
           useEffect(() => {
             const root = window.document.documentElement;
             root.classList.remove('light', 'dark');
-            if (theme !== 'cardmarket') {
-                root.classList.add(theme);
+            if (theme === 'dark') {
+                root.classList.add('dark');
             }
             localStorage.setItem('app-theme', theme);
           }, [theme]);
@@ -364,7 +364,7 @@
             if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
             switch (currentView) {
               case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }} />;
-              case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile }} />;
+              case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile, setHoveredCard }} />;
               case 'balance': return <BalanceDashboard {...{ transactions, profiles, addTransaction, currentUserProfile }} />;
               case 'matrix': return <BalanceMatrix {...{ transactions, profiles }} />;
               case 'profile': return <ProfileView user={user} profile={currentUserProfile} onProfileUpdate={handleProfileUpdate} />;
@@ -394,16 +394,18 @@
             <header className="bg-[#0e2454] text-white shadow-md">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center">
-                            <TheTabLogo />
+                        <div className="flex-shrink-0">
+                             <h1 className="text-2xl font-bold tracking-tight text-white">TheTab</h1>
                         </div>
-                        <div className="flex items-center space-x-1 sm:space-x-2">
+                        <div className="flex-1 flex items-center justify-center space-x-1 sm:space-x-2">
                             <button onClick={() => setCurrentView('search')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md ${currentView === 'search' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><SearchIcon/> Search</button>
                             <button onClick={() => setCurrentView('transactions')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md ${currentView === 'transactions' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><ListIcon/> History</button>
                             <button onClick={() => setCurrentView('balance')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md ${currentView === 'balance' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><ScaleIcon/> Balances</button>
                             <button onClick={() => setCurrentView('matrix')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md ${currentView === 'matrix' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><GridIcon/> Matrix</button>
                             <button onClick={() => setCurrentView('users')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md ${currentView === 'users' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><UsersIcon/> Users</button>
                             <button onClick={() => setCurrentView('profile')} className={`p-2 rounded-full ${currentView === 'profile' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><UserIcon /></button>
+                        </div>
+                        <div className="flex items-center">
                             <ThemeSwitcher />
                             <button onClick={handleSignOut} className="p-2 rounded-full hover:text-yellow-400" title="Sign Out"><LogOutIcon /></button>
                         </div>
@@ -417,6 +419,7 @@
                   <div className="h-screen flex flex-col bg-gray-200">
                       <CardMarketHeader />
                       <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-scroll">{renderView()}</main>
+                      {hoveredCard && <img src={hoveredCard} className="fixed z-30 w-56 rounded-lg shadow-2xl pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />}
                   </div>
               )
           }
@@ -449,6 +452,7 @@
                     <ThemeSwitcher />
                 </div>
                 {renderView()}
+                {hoveredCard && <img src={hoveredCard} className="fixed z-30 w-56 rounded-lg shadow-2xl pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />}
               </main>
             </div>
           );
@@ -762,7 +766,7 @@
             );
         });
 
-        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile }) => {
+        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile, setHoveredCard }) => {
             const [showCancelled, setShowCancelled] = useState(false);
             const [filters, setFilters] = useState({ 
                 buyer: 'all', 
@@ -891,13 +895,10 @@
                                                                 <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white dark:focus:bg-slate-700 disabled:cursor-not-allowed" disabled={isCancelled || !canEdit} />
                                                             </td>
                                                         ) : (
-                                                            <td className="px-4 py-4 relative group">
+                                                            <td className="px-4 py-4 relative" onMouseEnter={() => setHoveredCard(c.image_uri)} onMouseLeave={() => setHoveredCard(null)}>
                                                                 <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                                                                     {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
                                                                 </a>
-                                                                {c.image_uri && (
-                                                                    <img src={c.image_uri} alt={c.name} className="hidden group-hover:block absolute z-20 bottom-0 left-full ml-2 w-56 rounded-lg shadow-lg" onError={(e) => e.target.style.display='none'}/>
-                                                                )}
                                                             </td>
                                                         )}
                                                         
