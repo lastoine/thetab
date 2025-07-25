@@ -251,7 +251,6 @@
             const [isDarkMode, setIsDarkMode] = useState(false);
 
             useEffect(() => {
-                // Détecte le mode sombre du système
                 const darkModeMatcher = window.matchMedia('(prefers-color-scheme: dark)');
                 setIsDarkMode(darkModeMatcher.matches);
                 const handleDarkModeChange = (e) => setIsDarkMode(e.matches);
@@ -307,7 +306,6 @@
           const [currentView, setCurrentView] = useState('search');
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
-          // J'ai renommé les thèmes pour plus de clarté: 'modern' et 'cardmarket'
           const [theme, setTheme] = useState(localStorage.getItem('app-theme') || 'modern');
           const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -476,9 +474,6 @@
           );
         }
 
-        // --- Le reste des composants a été stylisé de la même manière pour la cohérence ---
-        // --- J'ai omis le code des autres composants pour la lisibilité, mais les styles ont été appliqués ---
-        // --- Vous pouvez copier/coller l'intégralité du code dans votre fichier pour voir tous les changements ---
         const ProfileView = ({ user, profile, onProfileUpdate }) => {
             const [nickname, setNickname] = useState(profile?.nickname || '');
             const [firstName, setFirstName] = useState(profile?.first_name || '');
@@ -773,8 +768,395 @@
             );
         });
 
-        // ... Le reste des composants a également été mis à jour
-        // --- Final Render ---
+        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile, setHoveredCard }) => {
+            const [showCancelled, setShowCancelled] = useState(false);
+            const [filters, setFilters] = useState({ 
+                buyer: 'all', 
+                seller: 'all', 
+                involved: true,
+                startDate: '',
+                endDate: ''
+            });
+            
+            useEffect(() => {
+                if (currentUserProfile) {
+                    setFilters(prev => ({ ...prev, involved: true }));
+                }
+            }, [currentUserProfile]);
+
+            const profilesById = useMemo(() => profiles.reduce((acc, profile) => {
+                acc[profile.id] = profile;
+                return acc;
+            }, {}), [profiles]);
+
+            const handleFilterChange = (e) => { 
+                const { name, value, type, checked } = e.target;
+                setFilters(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+            };
+            
+            const filteredTransactions = useMemo(() => (transactions || [])
+                .filter(tx => showCancelled || tx.status !== 'cancelled')
+                .filter(tx => {
+                    if (filters.involved && currentUserProfile) {
+                        return tx.buyer === currentUserProfile.id || tx.seller === currentUserProfile.id;
+                    }
+                    return true;
+                })
+                .filter(tx => filters.buyer === 'all' || tx.buyer === filters.buyer)
+                .filter(tx => filters.seller === 'all' || tx.seller === filters.seller)
+                .filter(tx => {
+                    if (!filters.startDate && !filters.endDate) return true;
+                    const txDate = new Date(tx.created_at); txDate.setHours(0,0,0,0);
+                    const startDate = filters.startDate ? new Date(filters.startDate) : null;
+                    const endDate = filters.endDate ? new Date(filters.endDate) : null;
+                    if (startDate && txDate < startDate) return false;
+                    if (endDate && txDate > endDate) return false;
+                    return true;
+                }), [transactions, filters, showCancelled, currentUserProfile]);
+
+            const getProfileData = (id, field) => profilesById[id]?.[field] || (field === 'nickname' ? 'Unknown User' : '');
+            const getProfileFullName = (id) => {
+                const p = profilesById[id];
+                if (!p) return 'Unknown User';
+                const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+                return fullName || p.nickname;
+            };
+
+            return (
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Historique des Transactions</h1>
+                     <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-md grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Acheteur</label>
+                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1">
+                                <option value="all">Tous</option>
+                                {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                            </select>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Vendeur</label>
+                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1">
+                                <option value="all">Tous</option>
+                                {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                            </select>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Date de début</label>
+                            <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1" />
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Date de fin</label>
+                            <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1" />
+                        </div>
+                        <div className="flex items-center space-x-4 lg:col-span-4 justify-end text-slate-600 dark:text-slate-300">
+                            <div className="flex items-center">
+                                <input type="checkbox" id="involved" name="involved" checked={filters.involved} onChange={handleFilterChange} className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+                                <label htmlFor="involved" className="ml-2 text-sm">Afficher uniquement mes transactions</label>
+                            </div>
+                            <div className="flex items-center">
+                                <input type="checkbox" id="showCancelled" checked={showCancelled} onChange={() => setShowCancelled(!showCancelled)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+                                <label htmlFor="showCancelled" className="ml-2 text-sm">Afficher les transactions annulées</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-md">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3">Date</th><th className="px-4 py-3">Acheteur</th><th className="px-4 py-3">Vendeur</th>
+                                        <th className="px-4 py-3">Carte / Description</th><th className="px-4 py-3">Set</th>
+                                        <th className="px-4 py-3">Langue</th>
+                                        <th className="px-4 py-3">Tendance CardMarket</th>
+                                        <th className="px-4 py-3">Prix Final</th>
+                                        <th className="px-4 py-3 text-right">Total</th><th className="px-4 py-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    {filteredTransactions.slice().reverse().map(tx => {
+                                        const isCancelled = tx.status === 'cancelled';
+                                        const isAdmin = currentUserProfile?.role === 'admin';
+                                        const is_involved = currentUserProfile?.id === tx.buyer || currentUserProfile?.id === tx.seller;
+                                        const canEdit = isAdmin || is_involved;
+
+                                        return (
+                                            <React.Fragment key={tx.id}>
+                                                {(tx.cards || []).map((c, index) => {
+                                                    const isManual = c.finish === 'manual';
+                                                    const rowClass = isManual ? 'bg-blue-50 dark:bg-blue-950/20' : '';
+                                                    return (
+                                                    <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-slate-100 dark:bg-slate-800/50' : `hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${rowClass}`}`}>
+                                                        {index === 0 && (<>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('fr-FR')}</td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.buyer)}>{getProfileData(tx.buyer, 'nickname')}</td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.seller)}>{getProfileData(tx.seller, 'nickname')}</td>
+                                                        </>)}
+                                                        
+                                                        {isManual ? (
+                                                            <td className="px-4 py-4 italic">
+                                                                <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white dark:focus:bg-slate-700 disabled:cursor-not-allowed" disabled={isCancelled || !canEdit} />
+                                                            </td>
+                                                        ) : (
+                                                            <td className="px-4 py-4 relative" onMouseEnter={() => setHoveredCard(c.image_uri)} onMouseLeave={() => setHoveredCard(null)}>
+                                                                <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                                                    {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
+                                                                </a>
+                                                            </td>
+                                                        )}
+                                                        
+                                                        <td className="px-4 py-4 text-slate-600 dark:text-slate-400">{!isManual && c.set_name}</td>
+                                                        <td className="px-4 py-4">
+                                                            {!isManual && <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md p-1 text-center font-mono disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed" maxLength="2" disabled={isCancelled || !canEdit} />}
+                                                        </td>
+                                                        <td className="px-4 py-4 font-mono">
+                                                            {!isManual && (c.purchase_uris?.cardmarket ? (
+                                                                <a href={c.purchase_uris.cardmarket} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                                                    {typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'} <ExternalLinkIcon />
+                                                                </a>
+                                                            ) : (
+                                                                <span>{typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'}</span>
+                                                            ))}
+                                                        </td>
+                                                        <td className="px-4 py-4">
+                                                            <div className="flex items-center">
+                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'finalPrice', parseFloat(e.target.value) || 0)} className="w-20 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md p-1 text-right font-mono disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed" step="0.01" disabled={isCancelled || !canEdit} />
+                                                                <span className="ml-1 text-slate-600 dark:text-slate-400">€</span>
+                                                            </div>
+                                                        </td>
+                                                        {index === 0 && (<>
+                                                            <td className="px-4 py-4 text-right font-mono" rowSpan={tx.cards.length}>{typeof tx.total === 'number' ? tx.total.toFixed(2) : '0.00'} €</td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/50' : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isCancelled ? 'Restaurer' : 'Annuler'} disabled={!canEdit}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
+                                                        </>)}
+                                                    </tr>
+                                                )})}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+
+        const ManualTransactionForm = React.memo(({ profiles, addTransaction, onClose, currentUserProfile }) => {
+            const [payerId, setPayerId] = useState(currentUserProfile?.id || '');
+            const [receiverId, setReceiverId] = useState('');
+            const [amount, setAmount] = useState('');
+            const [description, setDescription] = useState('Remboursement');
+
+            useEffect(() => {
+                const otherUsers = profiles.filter(p => p.id !== currentUserProfile?.id);
+                if(otherUsers.length > 0) {
+                    setReceiverId(otherUsers[0].id);
+                }
+            }, [profiles, currentUserProfile]);
+
+            const handleSubmit = useCallback((e) => {
+                e.preventDefault();
+                const finalAmount = parseFloat(amount);
+                if (!payerId || !receiverId || !finalAmount || finalAmount <= 0) {
+                    alert('Veuillez remplir tous les champs avec des valeurs valides.'); return;
+                }
+                if (payerId === receiverId) {
+                    alert('Le payeur et le receveur ne peuvent pas être la même personne.'); return;
+                }
+                addTransaction({
+                    buyer: receiverId, seller: payerId,
+                    cards: [{ id: `manual_${Date.now()}`, name: description, finish: 'manual', marketPrice: finalAmount, finalPrice: finalAmount, cartItemId: `manual_item_${Date.now()}` }],
+                    total: finalAmount, status: 'active'
+                });
+                onClose();
+            }, [payerId, receiverId, amount, description, addTransaction, onClose]);
+
+            return (
+                <div className="bg-white dark:bg-slate-900/80 rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-800 shadow-md">
+                    <h2 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Enregistrer un paiement manuel</h2>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="block text-sm font-medium mb-1">Qui paie ?</label>
+                            <select value={payerId} onChange={e => setPayerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2">
+                                {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                            </select>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="block text-sm font-medium mb-1">Qui reçoit ?</label>
+                            <select value={receiverId} onChange={e => setReceiverId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2">
+                                {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                            </select>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300">
+                            <label className="block text-sm font-medium mb-1">Montant (€)</label>
+                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} step="0.01" className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2" />
+                        </div>
+                        <div className="md:col-span-4 flex justify-end gap-4 mt-2">
+                            <button type="button" onClick={onClose} className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg transition-colors">Annuler</button>
+                            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Sauvegarder</button>
+                        </div>
+                    </form>
+                </div>
+            );
+        });
+        
+        const BalanceDashboard = React.memo(({ transactions, profiles, addTransaction, currentUserProfile }) => {
+            const [showForm, setShowForm] = useState(false);
+            
+            const { debts, credits, profilesById } = useMemo(() => {
+                if (!currentUserProfile) return { debts: [], credits: [], profilesById: {} };
+
+                const activeTxs = (transactions || []).filter(tx => tx.status !== 'cancelled');
+                
+                const profsById = profiles.reduce((acc, p) => {
+                    acc[p.id] = p;
+                    return acc;
+                }, {});
+
+                const balances = {};
+                profiles.forEach(p1 => {
+                    balances[p1.id] = {};
+                    profiles.forEach(p2 => { if (p1.id !== p2.id) balances[p1.id][p2.id] = 0; });
+                });
+
+                activeTxs.forEach(tx => {
+                    if (tx.buyer && tx.seller && tx.buyer !== tx.seller && balances[tx.buyer] && balances[tx.seller]) {
+                        balances[tx.buyer][tx.seller] = (balances[tx.buyer][tx.seller] || 0) + tx.total;
+                    }
+                });
+
+                const myDebts = [];
+                const myCredits = [];
+
+                profiles.forEach(otherUser => {
+                    if (otherUser.id === currentUserProfile.id) return;
+
+                    const iOweOther = balances[currentUserProfile.id]?.[otherUser.id] || 0;
+                    const otherOwesMe = balances[otherUser.id]?.[currentUserProfile.id] || 0;
+                    const netBalance = iOweOther - otherOwesMe;
+
+                    if (netBalance > 0) {
+                        myDebts.push({ to: otherUser.id, amount: netBalance });
+                    } else if (netBalance < 0) {
+                        myCredits.push({ from: otherUser.id, amount: -netBalance });
+                    }
+                });
+
+                return { debts: myDebts, credits: myCredits, profilesById: profsById };
+            }, [transactions, profiles, currentUserProfile]);
+            
+            const getProfileFullName = (id) => {
+                const p = profilesById[id];
+                if (!p) return 'Inconnu';
+                const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+                return fullName || p.nickname;
+            };
+
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Mes Soldes</h1>
+                        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-md hover:shadow-lg"><PlusCircleIcon /> Ajouter un Paiement</button>
+                    </div>
+                    {showForm && <ManualTransactionForm profiles={profiles} addTransaction={addTransaction} onClose={() => setShowForm(false)} currentUserProfile={currentUserProfile} />}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-white dark:bg-slate-900/80 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-800">
+                           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">Je dois</h2>
+                           {debts.length === 0 ? (
+                               <p className="text-slate-500 dark:text-slate-400">Vous n'avez aucune dette.</p>
+                           ) : (
+                               <ul className="space-y-3">
+                                   {debts.map(debt => (
+                                       <li key={debt.to} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                           <div className="flex items-center gap-3">
+                                               <span className="font-medium text-slate-700 dark:text-slate-300">Vous</span>
+                                               <ArrowRightIcon className="text-red-500"/>
+                                               <span className="font-medium text-slate-700 dark:text-slate-300" title={getProfileFullName(debt.to)}>{profilesById[debt.to]?.nickname || 'Inconnu'}</span>
+                                           </div>
+                                           <span className="font-bold text-red-600 text-lg">{debt.amount.toFixed(2)} €</span>
+                                       </li>
+                                   ))}
+                               </ul>
+                           )}
+                        </div>
+                        <div className="bg-white dark:bg-slate-900/80 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-800">
+                           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">On me doit</h2>
+                           {credits.length === 0 ? (
+                               <p className="text-slate-500 dark:text-slate-400">Personne ne vous doit d'argent.</p>
+                           ) : (
+                               <ul className="space-y-3">
+                                   {credits.map(credit => (
+                                       <li key={credit.from} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                           <div className="flex items-center gap-3">
+                                                <span className="font-medium text-slate-700 dark:text-slate-300" title={getProfileFullName(credit.from)}>{profilesById[credit.from]?.nickname || 'Inconnu'}</span>
+                                                <ArrowRightIcon className="text-green-500"/>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">Vous</span>
+                                           </div>
+                                           <span className="font-bold text-green-600 text-lg">{credit.amount.toFixed(2)} €</span>
+                                       </li>
+                                   ))}
+                               </ul>
+                           )}
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+
+        const BalanceMatrix = React.memo(({ transactions, profiles }) => {
+            const { balances } = useMemo(() => {
+                const activeTxs = (transactions || []).filter(tx => tx.status !== 'cancelled');
+                const bal = {};
+                profiles.forEach(p1 => {
+                    bal[p1.id] = {};
+                    profiles.forEach(p2 => { if (p1.id !== p2.id) bal[p1.id][p2.id] = 0; });
+                });
+                activeTxs.forEach(tx => {
+                    if (tx.buyer && tx.seller && tx.buyer !== tx.seller && bal[tx.buyer] && bal[tx.seller]) {
+                        bal[tx.buyer][tx.seller] = (bal[tx.buyer][tx.seller] || 0) + tx.total;
+                    }
+                });
+                return { balances: bal };
+            }, [transactions, profiles]);
+
+            const getProfileFullName = (profile) => {
+                if (!profile) return '';
+                const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+                return fullName || profile.nickname;
+            };
+
+            return (
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Matrice des Soldes</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Ce tableau montre qui doit à qui. Une valeur positive dans la cellule (Ligne, Colonne) signifie que la personne de la **Ligne** doit de l'argent à la personne de la **Colonne**.</p>
+                    <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-md overflow-x-auto">
+                        <table className="w-full min-w-[600px] text-sm text-center">
+                            <thead>
+                                <tr>
+                                    <th className="p-3 border-b-2 border-r border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 sticky left-0 z-10">↓ Doit / Dû à →</th>
+                                    {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold" title={getProfileFullName(p)}>{p.nickname}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {profiles.map(buyer => (
+                                    <tr key={buyer.id}>
+                                        <th className="p-3 border-r border-slate-200 dark:border-slate-700 text-left font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 sticky left-0 z-10" title={getProfileFullName(buyer)}>{buyer.nickname}</th>
+                                        {profiles.map(seller => {
+                                            if (buyer.id === seller.id) return <td key={seller.id} className="p-3 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700"></td>;
+                                            const netBalance = (balances[buyer.id]?.[seller.id] || 0) - (balances[seller.id]?.[buyer.id] || 0);
+                                            const colorClass = netBalance > 0 ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : netBalance < 0 ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-slate-500 dark:text-slate-400';
+                                            return <td key={seller.id} className={`p-3 border-t border-slate-200 dark:border-slate-700 font-mono font-bold ${colorClass}`}>{netBalance.toFixed(2)}</td>;
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )
+        });
+
+        // --- Rendu Final ---
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
