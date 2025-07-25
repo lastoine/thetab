@@ -413,7 +413,7 @@
               return (
                   <div className="h-screen flex flex-col bg-gray-100">
                       <CardMarketHeader />
-                      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">{renderView()}</main>
+                      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-scroll">{renderView()}</main>
                   </div>
               )
           }
@@ -441,7 +441,7 @@
                     <button onClick={handleSignOut} className="p-3 rounded-lg text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700" title="Sign Out"><LogOutIcon /></button>
                 </div>
               </nav>
-              <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-800 relative">
+              <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-scroll bg-gray-50 dark:bg-slate-800 relative">
                 <div className="absolute top-4 right-4">
                     <ThemeSwitcher />
                 </div>
@@ -851,7 +851,7 @@
                         </div>
                     </div>
                     <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700 shadow-sm">
-                        <div className="overflow-x-auto overflow-y-visible">
+                        <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-xs text-gray-500 dark:text-slate-400 uppercase bg-gray-50 dark:bg-slate-800">
                                     <tr>
@@ -893,7 +893,7 @@
                                                                     {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
                                                                 </a>
                                                                 {c.image_uri && (
-                                                                    <img src={c.image_uri} alt={c.name} className="hidden group-hover:block absolute z-20 bottom-0 left-full ml-2 w-56 rounded-lg shadow-lg" onError={(e) => e.target.style.display='none'}/>
+                                                                    <img src={c.image_uri} alt={c.name} className="hidden group-hover:block absolute z-20 top-1/2 -translate-y-1/2 left-full ml-2 w-56 rounded-lg shadow-lg" onError={(e) => e.target.style.display='none'}/>
                                                                 )}
                                                             </td>
                                                         )}
