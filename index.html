@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Configuration de Tailwind pour utiliser la police Inter -->
+    <!-- Tailwind Config to use Inter font -->
     <script>
         tailwind.config = {
             theme: {
@@ -37,7 +37,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* Ajout d'une transition douce pour le changement de thème */
+        /* Smooth transition for theme changes */
         body, .transition-colors {
             transition: background-color 0.3s ease, color 0.3s ease;
         }
@@ -49,13 +49,13 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback, useMemo } = React;
 
-        // --- Configuration et client Supabase ---
+        // --- Supabase Configuration and Client ---
         const supabaseUrl = "https://pnnmxmfstynzyhvdfdyw.supabase.co";
         const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubm14bWZzdHluenlodmRmZHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTU1NjQsImV4cCI6MjA2ODg3MTU2NH0.fzuomyiBGqk07noz_qW0dmZAqg3eulpXQiczoE26DWU";
         const { createClient } = supabase; 
         const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-        // --- Icônes SVG ---
+        // --- SVG Icons ---
         const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
         const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
         const Trash2Icon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
@@ -71,7 +71,7 @@
         const StoreIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 4l9 5.5M3 9.5v10.5h18V9.5M2 20h20M15 13H9v7h6v-7z"></path></svg>;
         const WandSparklesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 3 2.5 5L12 8l-2.5-5L5 3Zm14 6-2.5-5L12 8l2.5 5 4.5-3Z"/><path d="M8 12h8"/><path d="m5 21 2.5-5L12 16l-2.5 5L5 21Zm14-6-2.5 5L12 16l2.5-5 4.5 3Z"/></svg>;
 
-        // --- Composant d'authentification ---
+        // --- Auth Component ---
         function Auth({ supabase }) {
             const [view, setView] = useState('sign_in'); // sign_in, sign_up, forgot_password
             const [email, setEmail] = useState('');
@@ -87,7 +87,7 @@
                 try {
                     let response;
                     if (view === 'sign_up') {
-                        if (!nickname.trim()) throw new Error("Le pseudonyme est requis.");
+                        if (!nickname.trim()) throw new Error("Nickname is required.");
                         response = await supabase.auth.signUp({ 
                             email, 
                             password,
@@ -99,7 +99,7 @@
                     if (response.error) throw response.error;
                 } catch (error) {
                     if (error.message.includes('profiles_nickname_key')) {
-                        setError('Ce pseudonyme est déjà pris. Veuillez en choisir un autre.');
+                        setError('This nickname is already taken. Please choose another one.');
                     } else {
                         setError(error.error_description || error.message);
                     }
@@ -114,7 +114,7 @@
                 try {
                     const { error } = await supabase.auth.resetPasswordForEmail(email);
                     if (error) throw error;
-                    setMessage('Les instructions pour réinitialiser votre mot de passe ont été envoyées à votre email.');
+                    setMessage('Password reset instructions have been sent to your email.');
                 } catch (error) {
                     setError(error.error_description || error.message);
                 } finally {
@@ -136,60 +136,60 @@
             return (
                 <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col justify-center items-center p-4">
                     {view === 'forgot_password' ? (
-                        <AuthForm title="Réinitialiser le mot de passe" onSubmit={handlePasswordReset}>
+                        <AuthForm title="Reset Password" onSubmit={handlePasswordReset}>
                             <div>
-                                <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse e-mail</label>
+                                <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">Email address</label>
                                 <input id="email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                                     className="mt-1 w-full p-3 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             <div>
                                 <button type="submit" disabled={loading}
                                     className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300 transform hover:scale-105">
-                                    {loading ? 'Envoi...' : 'Envoyer les instructions'}
+                                    {loading ? 'Sending...' : 'Send Reset Instructions'}
                                 </button>
                             </div>
                              <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                                 <button onClick={() => setView('sign_in')} className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                    Retour à la connexion
+                                    Back to Sign In
                                 </button>
                             </p>
                         </AuthForm>
                     ) : (
-                        <AuthForm title={view === 'sign_up' ? 'Créer un compte' : 'Connexion'} onSubmit={handleAuthAction}>
+                        <AuthForm title={view === 'sign_up' ? 'Create Account' : 'Sign In'} onSubmit={handleAuthAction}>
                             {view === 'sign_up' && (
                                 <div>
-                                    <label htmlFor="nickname" className="text-sm font-medium text-slate-700 dark:text-slate-300">Pseudonyme</label>
+                                    <label htmlFor="nickname" className="text-sm font-medium text-slate-700 dark:text-slate-300">Nickname</label>
                                     <input id="nickname" name="nickname" type="text" required maxLength="25" value={nickname} onChange={(e) => setNickname(e.target.value)}
                                         className="mt-1 w-full p-3 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                                 </div>
                             )}
                             <div>
-                                <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse e-mail</label>
+                                <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">Email address</label>
                                 <input id="email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                                     className="mt-1 w-full p-3 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             <div>
-                                <label htmlFor="password"className="text-sm font-medium text-slate-700 dark:text-slate-300">Mot de passe</label>
+                                <label htmlFor="password"className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
                                 <input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
                                     className="mt-1 w-full p-3 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             {view === 'sign_in' && (
                                 <div className="text-right text-sm">
                                     <button type="button" onClick={() => setView('forgot_password')} className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                        Mot de passe oublié ?
+                                        Forgot password?
                                     </button>
                                 </div>
                             )}
                             <div>
                                 <button type="submit" disabled={loading}
                                     className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300 transform hover:scale-105">
-                                    {loading ? 'Traitement...' : (view === 'sign_up' ? "S'inscrire" : 'Se connecter')}
+                                    {loading ? 'Processing...' : (view === 'sign_up' ? "Sign Up" : 'Sign In')}
                                 </button>
                             </div>
                             <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-                                {view === 'sign_up' ? 'Déjà un compte ?' : "Pas encore de compte ?"}
+                                {view === 'sign_up' ? 'Already have an account?' : "Don't have an account?"}
                                 <button onClick={() => setView(view === 'sign_up' ? 'sign_in' : 'sign_up')} className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 ml-1">
-                                    {view === 'sign_up' ? 'Se connecter' : "S'inscrire"}
+                                    {view === 'sign_up' ? 'Sign In' : "Sign Up"}
                                 </button>
                             </p>
                         </AuthForm>
@@ -198,7 +198,7 @@
             );
         }
         
-        // --- Composant de mise à jour du mot de passe ---
+        // --- Update Password Component ---
         function UpdatePassword({ supabase }) {
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
@@ -211,7 +211,7 @@
                 try {
                     const { error } = await supabase.auth.updateUser({ password });
                     if (error) throw error;
-                    setMessage('Mot de passe mis à jour avec succès ! Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.');
+                    setMessage('Password updated successfully! You can now sign in with your new password.');
                 } catch (error) {
                     setError(error.error_description || error.message);
                 } finally {
@@ -222,19 +222,19 @@
             return (
                 <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col justify-center items-center p-4">
                     <div className="max-w-md w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 p-8 rounded-2xl shadow-xl">
-                        <h2 className="text-3xl font-bold text-center text-slate-800 dark:text-slate-100 mb-6">Choisir un nouveau mot de passe</h2>
+                        <h2 className="text-3xl font-bold text-center text-slate-800 dark:text-slate-100 mb-6">Choose a New Password</h2>
                         {message && <p className="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-center">{message}</p>}
                         {error && <p className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-center">{error}</p>}
                         <form onSubmit={handlePasswordUpdate} className="space-y-6">
                             <div>
-                                <label htmlFor="new-password"className="text-sm font-medium text-slate-700 dark:text-slate-300">Nouveau mot de passe</label>
+                                <label htmlFor="new-password"className="text-sm font-medium text-slate-700 dark:text-slate-300">New Password</label>
                                 <input id="new-password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
                                     className="mt-1 w-full p-3 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             <div>
                                 <button type="submit" disabled={loading}
                                     className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300 transform hover:scale-105">
-                                    {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+                                    {loading ? 'Updating...' : 'Update Password'}
                                 </button>
                             </div>
                         </form>
@@ -243,7 +243,7 @@
             );
         }
 
-        // --- Composant principal de l'application ---
+        // --- Main App Component ---
         function App() {
             const [session, setSession] = useState(null);
             const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
@@ -251,6 +251,7 @@
             const [isDarkMode, setIsDarkMode] = useState(false);
 
             useEffect(() => {
+                // Detect system dark mode preference
                 const darkModeMatcher = window.matchMedia('(prefers-color-scheme: dark)');
                 setIsDarkMode(darkModeMatcher.matches);
                 const handleDarkModeChange = (e) => setIsDarkMode(e.matches);
@@ -275,7 +276,7 @@
             }, []);
 
             if (isLoading) {
-                return <div className="text-center p-10 dark:text-white">Initialisation...</div>;
+                return <div className="text-center p-10 dark:text-white">Initializing...</div>;
             }
             
             if (isPasswordRecovery) {
@@ -304,7 +305,7 @@
             localStorage.setItem('app-theme', theme);
             const root = window.document.documentElement;
             
-            // Le mode sombre ne s'applique que pour le thème 'modern'
+            // Dark mode only applies to the 'modern' theme
             if (theme === 'modern' && isDarkMode) {
                 root.classList.add('dark');
             } else {
@@ -327,8 +328,8 @@
                   if (transactionsError) throw transactionsError;
                   setTransactions(transactionsData);
               } catch (err) {
-                  console.error("Erreur de récupération des données:", err.message);
-                  setError('Impossible de récupérer les données.');
+                  console.error("Data fetching error:", err.message);
+                  setError('Could not fetch data from the database.');
               } finally {
                   setIsLoading(false);
               }
@@ -354,7 +355,7 @@
               setTransactions(prev => [...prev, data[0]]);
               setCart([]);
               setCurrentView('transactions');
-            } catch (e) { alert("Erreur: " + e.message); }
+            } catch (e) { alert("Error: " + e.message); }
           }, []);
 
           const updateTransactionCard = useCallback(async (txId, itemId, field, value) => {
@@ -377,11 +378,11 @@
               const { data, error } = await supabaseClient.from('transactions').update({ status: newStatus }).eq('id', txId).select();
               if (error) throw error;
               setTransactions(prev => prev.map(t => t.id === txId ? data[0] : t));
-            } catch (e) { alert("Erreur: " + e.message); }
+            } catch (e) { alert("Error: " + e.message); }
           }, [transactions]);
 
           const renderView = () => {
-            if (isLoading) return <div className="text-center p-10 dark:text-white">Chargement des données...</div>;
+            if (isLoading) return <div className="text-center p-10 dark:text-white">Loading data...</div>;
             if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
             switch (currentView) {
               case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }} />;
@@ -390,7 +391,7 @@
               case 'matrix': return <BalanceMatrix {...{ transactions, profiles }} />;
               case 'profile': return <ProfileView user={user} profile={currentUserProfile} onProfileUpdate={handleProfileUpdate} />;
               case 'users': return <UsersView profiles={profiles} />;
-              default: return <div>Bienvenue</div>;
+              default: return <div>Welcome</div>;
             }
           };
 
@@ -413,16 +414,16 @@
                              <h1 className="text-2xl font-bold tracking-tight text-white">TheTab</h1>
                         </div>
                         <div className="hidden sm:flex flex-1 items-center justify-center space-x-1">
-                            <button onClick={() => setCurrentView('search')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'search' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><SearchIcon/> Recherche</button>
-                            <button onClick={() => setCurrentView('transactions')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'transactions' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><ListIcon/> Historique</button>
-                            <button onClick={() => setCurrentView('balance')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'balance' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><ScaleIcon/> Soldes</button>
-                            <button onClick={() => setCurrentView('matrix')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'matrix' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><GridIcon/> Matrice</button>
-                            <button onClick={() => setCurrentView('users')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'users' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><UsersIcon/> Utilisateurs</button>
+                            <button onClick={() => setCurrentView('search')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'search' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><SearchIcon/> Search</button>
+                            <button onClick={() => setCurrentView('transactions')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'transactions' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><ListIcon/> History</button>
+                            <button onClick={() => setCurrentView('balance')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'balance' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><ScaleIcon/> Balances</button>
+                            <button onClick={() => setCurrentView('matrix')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'matrix' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><GridIcon/> Matrix</button>
+                            <button onClick={() => setCurrentView('users')} className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${currentView === 'users' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><UsersIcon/> Users</button>
                         </div>
                         <div className="flex items-center">
                             <button onClick={() => setCurrentView('profile')} className={`p-2 rounded-full transition-colors ${currentView === 'profile' ? 'text-yellow-300 bg-white/10' : 'hover:text-yellow-300 hover:bg-white/10'}`}><UserIcon /></button>
                             <ThemeSwitcher />
-                            <button onClick={handleSignOut} className="p-2 rounded-full hover:text-yellow-300 hover:bg-white/10 transition-colors" title="Déconnexion"><LogOutIcon /></button>
+                            <button onClick={handleSignOut} className="p-2 rounded-full hover:text-yellow-300 hover:bg-white/10 transition-colors" title="Sign Out"><LogOutIcon /></button>
                         </div>
                     </div>
                 </div>
@@ -443,23 +444,23 @@
             <div className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 h-screen flex overflow-hidden">
               <nav className="p-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border-r border-slate-200 dark:border-slate-800 flex flex-col items-center space-y-3 shrink-0 shadow-lg z-10">
                 <div className="flex-grow">
-                    <button onClick={() => setCurrentView('search')} className={`p-3 rounded-xl transition-all duration-200 ${currentView === 'search' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Recherche & Panier"><SearchIcon /></button>
+                    <button onClick={() => setCurrentView('search')} className={`p-3 rounded-xl transition-all duration-200 ${currentView === 'search' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Search & Cart"><SearchIcon /></button>
                     <button onClick={() => setCurrentView('transactions')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'transactions' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Transactions"><ListIcon /></button>
-                    <button onClick={() => setCurrentView('balance')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'balance' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Soldes"><ScaleIcon /></button>
-                    <button onClick={() => setCurrentView('matrix')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'matrix' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Matrice"><GridIcon /></button>
-                    <button onClick={() => setCurrentView('users')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'users' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Utilisateurs"><UsersIcon /></button>
-                    <button onClick={() => setCurrentView('profile')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'profile' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Mon Profil"><UserIcon /></button>
+                    <button onClick={() => setCurrentView('balance')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'balance' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Balances"><ScaleIcon /></button>
+                    <button onClick={() => setCurrentView('matrix')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'matrix' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Matrix"><GridIcon /></button>
+                    <button onClick={() => setCurrentView('users')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'users' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="Users"><UsersIcon /></button>
+                    <button onClick={() => setCurrentView('profile')} className={`p-3 mt-2 rounded-xl transition-all duration-200 ${currentView === 'profile' ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-white'}`} title="My Profile"><UserIcon /></button>
                 </div>
                 <div className="shrink-0 text-center">
                     {currentUserProfile && (
-                        <button onClick={() => setCurrentView('profile')} className="mb-2 px-2 py-1 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800/60 w-full text-center" title="Aller à votre profil">
-                            <span className="text-xs text-slate-500 dark:text-slate-400">Connecté en tant que</span>
+                        <button onClick={() => setCurrentView('profile')} className="mb-2 px-2 py-1 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800/60 w-full text-center" title="Go to your profile">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Logged in as</span>
                             <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-400 block truncate" title={currentUserProfile.nickname}>
                                 {currentUserProfile.nickname}
                             </span>
                         </button>
                     )}
-                    <button onClick={handleSignOut} className="p-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60" title="Déconnexion"><LogOutIcon /></button>
+                    <button onClick={handleSignOut} className="p-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60" title="Sign Out"><LogOutIcon /></button>
                 </div>
               </nav>
               <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-900 relative">
@@ -507,12 +508,12 @@
                     const { data, error } = await supabaseClient.from('profiles').upsert(updates).select().single();
                     if (error) throw error;
                     onProfileUpdate(data);
-                    setMessage('Profil mis à jour avec succès !');
+                    setMessage('Profile updated successfully!');
                 } catch (error) {
                     if (error.message.includes('profiles_nickname_key')) {
-                      setMessage('Erreur: Ce pseudonyme est déjà pris.');
+                      setMessage('Error: This nickname is already taken.');
                     } else {
-                      setMessage('Erreur: ' + error.message);
+                      setMessage('Error: ' + error.message);
                     }
                 } finally {
                     setLoading(false);
@@ -521,7 +522,7 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Mon Profil</h1>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">My Profile</h1>
                     <div className="max-w-2xl bg-white dark:bg-slate-900/80 p-8 rounded-xl shadow-md border border-slate-200 dark:border-slate-800">
                         <form onSubmit={handleUpdateProfile} className="space-y-6">
                             <div>
@@ -529,31 +530,31 @@
                                 <input id="email" type="text" value={user.email} disabled className="mt-1 w-full p-3 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg cursor-not-allowed"/>
                             </div>
                             <div>
-                                <label htmlFor="profile-nickname" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Pseudonyme</label>
+                                <label htmlFor="profile-nickname" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Nickname</label>
                                 <input id="profile-nickname" type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} required maxLength="25" className="mt-1 w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Prénom</label>
+                                    <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300">First Name</label>
                                     <input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                                 </div>
                                 <div>
-                                    <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Nom</label>
+                                    <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Last Name</label>
                                     <input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="wishlistUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300">URL de la Wishlist</label>
+                                <label htmlFor="wishlistUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Wishlist URL</label>
                                 <input id="wishlistUrl" type="url" value={wishlistUrl} onChange={(e) => setWishlistUrl(e.target.value)} className="mt-1 w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             <div>
-                                <label htmlFor="tradelistUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300">URL de la Tradelist</label>
+                                <label htmlFor="tradelistUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Tradelist URL</label>
                                 <input id="tradelistUrl" type="url" value={tradelistUrl} onChange={(e) => setTradelistUrl(e.target.value)} className="mt-1 w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
                             </div>
                             <div className="flex items-center justify-end gap-4">
-                                {message && <p className={`text-sm ${message.includes('Erreur') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
+                                {message && <p className={`text-sm ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
                                 <button type="submit" disabled={loading} className="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors disabled:bg-indigo-400">
-                                    {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+                                    {loading ? 'Saving...' : 'Save'}
                                 </button>
                             </div>
                         </form>
@@ -571,13 +572,13 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Liste des Utilisateurs</h1>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Users List</h1>
                     <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-md">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-800">
                                     <tr>
-                                        <th className="px-6 py-3">Pseudonyme</th>
+                                        <th className="px-6 py-3">Nickname</th>
                                         <th className="px-6 py-3">Wishlist</th>
                                         <th className="px-6 py-3">Tradelist</th>
                                     </tr>
@@ -589,19 +590,19 @@
                                             <td className="px-6 py-4">
                                                 {profile.wishlist_url ? (
                                                     <a href={profile.wishlist_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                                        Voir Wishlist <ExternalLinkIcon />
+                                                        View Wishlist <ExternalLinkIcon />
                                                     </a>
                                                 ) : (
-                                                    <span className="text-slate-400 dark:text-slate-500">Non fournie</span>
+                                                    <span className="text-slate-400 dark:text-slate-500">Not provided</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {profile.tradelist_url ? (
                                                     <a href={profile.tradelist_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                                        Voir Tradelist <ExternalLinkIcon />
+                                                        View Tradelist <ExternalLinkIcon />
                                                     </a>
                                                 ) : (
-                                                    <span className="text-slate-400 dark:text-slate-500">Non fournie</span>
+                                                    <span className="text-slate-400 dark:text-slate-500">Not provided</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -635,7 +636,7 @@
             setIsLoading(true); setError(null);
             try {
               const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`${searchQuery.trim()} unique:prints`)}`);
-              if (!response.ok) { const errData = await response.json(); throw new Error(errData.details || 'Carte non trouvée.'); }
+              if (!response.ok) { const errData = await response.json(); throw new Error(errData.details || 'Card not found.'); }
               const data = await response.json();
               const processedResults = data.data.flatMap(card => 
                 card.finishes.map(finish => ({
@@ -655,14 +656,14 @@
           return (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-4">Recherche de cartes</h1>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-4">Card Search</h1>
                 <div className="flex gap-2 mb-4">
-                  <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder='Commencez à taper un nom de carte...' className="flex-grow bg-white dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-900 dark:text-slate-200"/>
+                  <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder='Start typing a card name...' className="flex-grow bg-white dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-900 dark:text-slate-200"/>
                 </div>
                 <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-md min-h-[60vh]">
-                  {isLoading && <p className="text-slate-500 dark:text-slate-400 text-center py-12">Recherche en cours...</p>}
+                  {isLoading && <p className="text-slate-500 dark:text-slate-400 text-center py-12">Searching...</p>}
                   {error && <p className="text-red-600 text-center py-12">{error}</p>}
-                  {!isLoading && searchResults.length === 0 && !error && <p className="text-slate-500 dark:text-slate-400 text-center py-12">Les résultats de la recherche s'afficheront ici.</p>}
+                  {!isLoading && searchResults.length === 0 && !error && <p className="text-slate-500 dark:text-slate-400 text-center py-12">Search results will be displayed here.</p>}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {searchResults.map(card => (
                       <div key={`${card.id}-${card.finish}`} className="bg-white dark:bg-slate-800 rounded-lg p-2 flex flex-col items-center text-center border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-200 group">
@@ -670,14 +671,14 @@
                         <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-200">{card.name} {card.finish === 'foil' && <span className="text-cyan-500">(Foil)</span>}</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">{card.set_name}</p>
                         <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm my-1">{card.price ? `${card.price} €` : 'N/A'}</p>
-                        <button onClick={() => addToCart(card)} className="bg-indigo-500 text-white text-xs w-full py-1.5 rounded-md mt-auto hover:bg-indigo-600 transition-colors">Ajouter au panier</button>
+                        <button onClick={() => addToCart(card)} className="bg-indigo-500 text-white text-xs w-full py-1.5 rounded-md mt-auto hover:bg-indigo-600 transition-colors">Add to Cart</button>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
               <div className="lg:sticky lg:top-8 h-fit">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center">Panier</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center">Cart</h2>
                 <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} updateCartItemLang={updateCartItemLang} profiles={profiles} addTransaction={addTransaction} currentUserProfile={currentUserProfile} />
               </div>
             </div>
@@ -700,11 +701,11 @@
             }, [profiles, currentUserProfile, buyerId]);
 
             const handleRecordTransaction = useCallback(() => {
-                if (!buyerId || !sellerId || cart.length === 0) { alert('Veuillez sélectionner un acheteur, un vendeur et au moins une carte.'); return; }
-                if (buyerId === sellerId) { alert("L'acheteur et le vendeur ne peuvent pas être la même personne."); return; }
+                if (!buyerId || !sellerId || cart.length === 0) { alert('Please select a buyer, a seller, and at least one card.'); return; }
+                if (buyerId === sellerId) { alert("Buyer and Seller cannot be the same person."); return; }
                 const isAdmin = currentUserProfile?.role === 'admin';
                 const is_involved = currentUserProfile?.id === buyerId || currentUserProfile?.id === sellerId;
-                if (!isAdmin && !is_involved) { alert("Vous ne pouvez enregistrer que les transactions où vous êtes l'acheteur ou le vendeur."); return; }
+                if (!isAdmin && !is_involved) { alert("You can only record transactions where you are the buyer or the seller."); return; }
                 const newTransaction = {
                     buyer: buyerId, seller: sellerId,
                     cards: cart.map(c => ({ ...c, marketPrice: parseFloat(c.price) || 0, finalPrice: parseFloat(c.finalPrice) || 0 })),
@@ -724,7 +725,7 @@
             return (
                 <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 flex flex-col border border-slate-200 dark:border-slate-800 shadow-md max-h-[calc(100vh-8rem)]">
                     <div className="flex-grow overflow-y-auto mb-4 pr-2">
-                        {cart.length === 0 ? <p className="text-slate-500 dark:text-slate-400 text-center mt-8">Votre panier est vide.</p> :
+                        {cart.length === 0 ? <p className="text-slate-500 dark:text-slate-400 text-center mt-8">Your cart is empty.</p> :
                             <ul className="space-y-3">
                                 {cart.map(card => (
                                     <li key={card.cartItemId} className="flex items-center justify-between bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
@@ -747,20 +748,20 @@
                         <div className="border-t border-slate-200 dark:border-slate-700 pt-4 shrink-0">
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Acheteur</label>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Buyer</label>
                                     <select value={buyerId} onChange={e => setBuyerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-slate-900 dark:text-slate-200">
                                         {profiles.map(p => <option key={p.id} value={p.id} title={getProfileFullName(p)}>{p.nickname}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Vendeur</label>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Seller</label>
                                     <select value={sellerId} onChange={e => setSellerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-slate-900 dark:text-slate-200">
                                         {profiles.map(p => <option key={p.id} value={p.id} title={getProfileFullName(p)}>{p.nickname}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <div className="text-right font-bold text-xl mb-4 text-slate-900 dark:text-slate-200">Total: {total} €</div>
-                            <button onClick={handleRecordTransaction} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 rounded-lg transition-colors">Enregistrer la transaction</button>
+                            <button onClick={handleRecordTransaction} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 rounded-lg transition-colors">Record Transaction</button>
                         </div>
                     )}
                 </div>
@@ -823,38 +824,38 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Historique des Transactions</h1>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Transaction History</h1>
                      <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-md grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="text-sm font-medium">Acheteur</label>
+                            <label className="text-sm font-medium">Buyer</label>
                             <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1">
-                                <option value="all">Tous</option>
+                                <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="text-sm font-medium">Vendeur</label>
+                            <label className="text-sm font-medium">Seller</label>
                             <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1">
-                                <option value="all">Tous</option>
+                                <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="text-sm font-medium">Date de début</label>
+                            <label className="text-sm font-medium">Start Date</label>
                             <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1" />
                         </div>
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="text-sm font-medium">Date de fin</label>
+                            <label className="text-sm font-medium">End Date</label>
                             <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 mt-1" />
                         </div>
                         <div className="flex items-center space-x-4 lg:col-span-4 justify-end text-slate-600 dark:text-slate-300">
                             <div className="flex items-center">
                                 <input type="checkbox" id="involved" name="involved" checked={filters.involved} onChange={handleFilterChange} className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
-                                <label htmlFor="involved" className="ml-2 text-sm">Afficher uniquement mes transactions</label>
+                                <label htmlFor="involved" className="ml-2 text-sm">Only show my transactions</label>
                             </div>
                             <div className="flex items-center">
                                 <input type="checkbox" id="showCancelled" checked={showCancelled} onChange={() => setShowCancelled(!showCancelled)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
-                                <label htmlFor="showCancelled" className="ml-2 text-sm">Afficher les transactions annulées</label>
+                                <label htmlFor="showCancelled" className="ml-2 text-sm">Show cancelled</label>
                             </div>
                         </div>
                     </div>
@@ -863,11 +864,11 @@
                             <table className="w-full text-sm text-left">
                                 <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-800">
                                     <tr>
-                                        <th className="px-4 py-3">Date</th><th className="px-4 py-3">Acheteur</th><th className="px-4 py-3">Vendeur</th>
-                                        <th className="px-4 py-3">Carte / Description</th><th className="px-4 py-3">Set</th>
-                                        <th className="px-4 py-3">Langue</th>
-                                        <th className="px-4 py-3">Tendance CardMarket</th>
-                                        <th className="px-4 py-3">Prix Final</th>
+                                        <th className="px-4 py-3">Date</th><th className="px-4 py-3">Buyer</th><th className="px-4 py-3">Seller</th>
+                                        <th className="px-4 py-3">Card / Description</th><th className="px-4 py-3">Set</th>
+                                        <th className="px-4 py-3">Lang</th>
+                                        <th className="px-4 py-3">CardMarket Trend</th>
+                                        <th className="px-4 py-3">Final Price</th>
                                         <th className="px-4 py-3 text-right">Total</th><th className="px-4 py-3">Actions</th>
                                     </tr>
                                 </thead>
@@ -886,7 +887,7 @@
                                                     return (
                                                     <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-slate-100 dark:bg-slate-800/50' : `hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${rowClass}`}`}>
                                                         {index === 0 && (<>
-                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('fr-FR')}</td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.buyer)}>{getProfileData(tx.buyer, 'nickname')}</td>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.seller)}>{getProfileData(tx.seller, 'nickname')}</td>
                                                         </>)}
@@ -924,7 +925,7 @@
                                                         </td>
                                                         {index === 0 && (<>
                                                             <td className="px-4 py-4 text-right font-mono" rowSpan={tx.cards.length}>{typeof tx.total === 'number' ? tx.total.toFixed(2) : '0.00'} €</td>
-                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/50' : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isCancelled ? 'Restaurer' : 'Annuler'} disabled={!canEdit}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/50' : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isCancelled ? 'Restore' : 'Cancel'} disabled={!canEdit}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
                                                         </>)}
                                                     </tr>
                                                 )})}
@@ -943,7 +944,7 @@
             const [payerId, setPayerId] = useState(currentUserProfile?.id || '');
             const [receiverId, setReceiverId] = useState('');
             const [amount, setAmount] = useState('');
-            const [description, setDescription] = useState('Remboursement');
+            const [description, setDescription] = useState('Reimbursement');
 
             useEffect(() => {
                 const otherUsers = profiles.filter(p => p.id !== currentUserProfile?.id);
@@ -956,10 +957,10 @@
                 e.preventDefault();
                 const finalAmount = parseFloat(amount);
                 if (!payerId || !receiverId || !finalAmount || finalAmount <= 0) {
-                    alert('Veuillez remplir tous les champs avec des valeurs valides.'); return;
+                    alert('Please fill all fields with valid values.'); return;
                 }
                 if (payerId === receiverId) {
-                    alert('Le payeur et le receveur ne peuvent pas être la même personne.'); return;
+                    alert('Payer and Receiver cannot be the same person.'); return;
                 }
                 addTransaction({
                     buyer: receiverId, seller: payerId,
@@ -971,27 +972,27 @@
 
             return (
                 <div className="bg-white dark:bg-slate-900/80 rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-800 shadow-md">
-                    <h2 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Enregistrer un paiement manuel</h2>
+                    <h2 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Record a Manual Payment</h2>
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="block text-sm font-medium mb-1">Qui paie ?</label>
+                            <label className="block text-sm font-medium mb-1">Who pays?</label>
                             <select value={payerId} onChange={e => setPayerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2">
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="block text-sm font-medium mb-1">Qui reçoit ?</label>
+                            <label className="block text-sm font-medium mb-1">Who receives?</label>
                             <select value={receiverId} onChange={e => setReceiverId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2">
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
                         <div className="text-slate-700 dark:text-slate-300">
-                            <label className="block text-sm font-medium mb-1">Montant (€)</label>
+                            <label className="block text-sm font-medium mb-1">Amount (€)</label>
                             <input type="number" value={amount} onChange={e => setAmount(e.target.value)} step="0.01" className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2" />
                         </div>
                         <div className="md:col-span-4 flex justify-end gap-4 mt-2">
-                            <button type="button" onClick={onClose} className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg transition-colors">Annuler</button>
-                            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Sauvegarder</button>
+                            <button type="button" onClick={onClose} className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Save</button>
                         </div>
                     </form>
                 </div>
@@ -1045,7 +1046,7 @@
             
             const getProfileFullName = (id) => {
                 const p = profilesById[id];
-                if (!p) return 'Inconnu';
+                if (!p) return 'Unknown';
                 const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
                 return fullName || p.nickname;
             };
@@ -1053,24 +1054,24 @@
             return (
                 <div>
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Mes Soldes</h1>
-                        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-md hover:shadow-lg"><PlusCircleIcon /> Ajouter un Paiement</button>
+                        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">My Balances</h1>
+                        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-md hover:shadow-lg"><PlusCircleIcon /> Add Payment</button>
                     </div>
                     {showForm && <ManualTransactionForm profiles={profiles} addTransaction={addTransaction} onClose={() => setShowForm(false)} currentUserProfile={currentUserProfile} />}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white dark:bg-slate-900/80 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-800">
-                           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">Je dois</h2>
+                           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">I Owe</h2>
                            {debts.length === 0 ? (
-                               <p className="text-slate-500 dark:text-slate-400">Vous n'avez aucune dette.</p>
+                               <p className="text-slate-500 dark:text-slate-400">You have no outstanding debts.</p>
                            ) : (
                                <ul className="space-y-3">
                                    {debts.map(debt => (
                                        <li key={debt.to} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                                            <div className="flex items-center gap-3">
-                                               <span className="font-medium text-slate-700 dark:text-slate-300">Vous</span>
+                                               <span className="font-medium text-slate-700 dark:text-slate-300">You</span>
                                                <ArrowRightIcon className="text-red-500"/>
-                                               <span className="font-medium text-slate-700 dark:text-slate-300" title={getProfileFullName(debt.to)}>{profilesById[debt.to]?.nickname || 'Inconnu'}</span>
+                                               <span className="font-medium text-slate-700 dark:text-slate-300" title={getProfileFullName(debt.to)}>{profilesById[debt.to]?.nickname || 'Unknown'}</span>
                                            </div>
                                            <span className="font-bold text-red-600 text-lg">{debt.amount.toFixed(2)} €</span>
                                        </li>
@@ -1079,17 +1080,17 @@
                            )}
                         </div>
                         <div className="bg-white dark:bg-slate-900/80 p-6 rounded-xl shadow-md border border-slate-200 dark:border-slate-800">
-                           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">On me doit</h2>
+                           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">Owed to Me</h2>
                            {credits.length === 0 ? (
-                               <p className="text-slate-500 dark:text-slate-400">Personne ne vous doit d'argent.</p>
+                               <p className="text-slate-500 dark:text-slate-400">Nobody owes you money.</p>
                            ) : (
                                <ul className="space-y-3">
                                    {credits.map(credit => (
                                        <li key={credit.from} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                                            <div className="flex items-center gap-3">
-                                                <span className="font-medium text-slate-700 dark:text-slate-300" title={getProfileFullName(credit.from)}>{profilesById[credit.from]?.nickname || 'Inconnu'}</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300" title={getProfileFullName(credit.from)}>{profilesById[credit.from]?.nickname || 'Unknown'}</span>
                                                 <ArrowRightIcon className="text-green-500"/>
-                                                <span className="font-medium text-slate-700 dark:text-slate-300">Vous</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">You</span>
                                            </div>
                                            <span className="font-bold text-green-600 text-lg">{credit.amount.toFixed(2)} €</span>
                                        </li>
@@ -1126,13 +1127,13 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Matrice des Soldes</h1>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Ce tableau montre qui doit à qui. Une valeur positive dans la cellule (Ligne, Colonne) signifie que la personne de la **Ligne** doit de l'argent à la personne de la **Colonne**.</p>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Balance Matrix</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">This table shows who owes whom. A positive value in cell (Row, Column) means the person in the **Row** owes money to the person in the **Column**.</p>
                     <div className="bg-white dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-md overflow-x-auto">
                         <table className="w-full min-w-[600px] text-sm text-center">
                             <thead>
                                 <tr>
-                                    <th className="p-3 border-b-2 border-r border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 sticky left-0 z-10">↓ Doit / Dû à →</th>
+                                    <th className="p-3 border-b-2 border-r border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 sticky left-0 z-10">↓ Owes / Owed to →</th>
                                     {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold" title={getProfileFullName(p)}>{p.nickname}</th>)}
                                 </tr>
                             </thead>
@@ -1155,7 +1156,7 @@
             )
         });
 
-        // --- Rendu Final ---
+        // --- Final Render ---
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
