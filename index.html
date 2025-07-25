@@ -14,7 +14,7 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -40,6 +40,9 @@
         const LogOutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
         const ArrowRightIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
         const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+        const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
+        const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
+        const StoreIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 4l9 5.5M3 9.5v10.5h18V9.5M2 20h20M15 13H9v7h6v-7z"></path></svg>;
 
         // --- Auth Component ---
         function Auth({ supabase }) {
@@ -265,6 +268,14 @@
           const [currentView, setCurrentView] = useState('search');
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
+          const [theme, setTheme] = useState(localStorage.getItem('app-theme') || 'light');
+
+          useEffect(() => {
+            const root = window.document.documentElement;
+            const isDark = theme === 'dark';
+            root.classList.toggle('dark', isDark);
+            localStorage.setItem('app-theme', theme);
+          }, [theme]);
 
           const fetchData = useCallback(async () => {
               setIsLoading(true);
@@ -346,7 +357,7 @@
           }, [transactions]);
 
           const renderView = () => {
-            if (isLoading) return <div className="text-center p-10">Loading data...</div>;
+            if (isLoading) return <div className="text-center p-10 dark:text-white">Loading data...</div>;
             if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
             switch (currentView) {
               case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }} />;
@@ -359,30 +370,83 @@
             }
           };
 
+          const ThemeSwitcher = () => {
+            const toggleTheme = () => {
+                const themes = ['light', 'dark', 'cardmarket'];
+                const currentIndex = themes.indexOf(theme);
+                const nextIndex = (currentIndex + 1) % themes.length;
+                setTheme(themes[nextIndex]);
+            };
+
+            return (
+                <button onClick={toggleTheme} className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700">
+                    {theme === 'light' && <MoonIcon />}
+                    {theme === 'dark' && <StoreIcon />}
+                    {theme === 'cardmarket' && <SunIcon />}
+                </button>
+            );
+          };
+          
+          const CardMarketHeader = () => (
+            <header className="bg-[#0e2454] text-white shadow-md">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        <div className="flex items-center">
+                            <h1 className="text-2xl font-bold tracking-tight">TheTab</h1>
+                        </div>
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            <button onClick={() => setCurrentView('search')} className={`px-2 py-1 text-sm rounded-md ${currentView === 'search' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}>Search</button>
+                            <button onClick={() => setCurrentView('transactions')} className={`px-2 py-1 text-sm rounded-md ${currentView === 'transactions' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}>History</button>
+                            <button onClick={() => setCurrentView('balance')} className={`px-2 py-1 text-sm rounded-md ${currentView === 'balance' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}>Balances</button>
+                            <button onClick={() => setCurrentView('matrix')} className={`px-2 py-1 text-sm rounded-md ${currentView === 'matrix' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}>Matrix</button>
+                            <button onClick={() => setCurrentView('users')} className={`px-2 py-1 text-sm rounded-md ${currentView === 'users' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}>Users</button>
+                            <button onClick={() => setCurrentView('profile')} className={`p-2 rounded-full ${currentView === 'profile' ? 'text-yellow-400' : 'hover:text-yellow-400'}`}><UserIcon /></button>
+                            <ThemeSwitcher />
+                            <button onClick={handleSignOut} className="p-2 rounded-full hover:text-yellow-400" title="Sign Out"><LogOutIcon /></button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+          );
+
+          if (theme === 'cardmarket') {
+              return (
+                  <div className="h-screen flex flex-col bg-gray-100">
+                      <CardMarketHeader />
+                      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">{renderView()}</main>
+                  </div>
+              )
+          }
+
           return (
-            <div className="bg-white text-gray-800 h-screen font-sans flex overflow-hidden">
-              <nav className="p-4 bg-white border-r border-gray-200 flex flex-col items-center space-y-4 shrink-0 shadow-md">
+            <div className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 h-screen font-sans flex overflow-hidden">
+              <nav className="p-4 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex flex-col items-center space-y-4 shrink-0 shadow-md">
                 <div className="flex-grow">
-                    <button onClick={() => setCurrentView('search')} className={`p-3 rounded-lg ${currentView === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Search & Cart"><SearchIcon /></button>
-                    <button onClick={() => setCurrentView('transactions')} className={`p-3 mt-2 rounded-lg ${currentView === 'transactions' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Transactions"><ListIcon /></button>
-                    <button onClick={() => setCurrentView('balance')} className={`p-3 mt-2 rounded-lg ${currentView === 'balance' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Balances"><ScaleIcon /></button>
-                    <button onClick={() => setCurrentView('matrix')} className={`p-3 mt-2 rounded-lg ${currentView === 'matrix' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Matrix"><GridIcon /></button>
-                    <button onClick={() => setCurrentView('users')} className={`p-3 mt-2 rounded-lg ${currentView === 'users' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="Users"><UsersIcon /></button>
-                    <button onClick={() => setCurrentView('profile')} className={`p-3 mt-2 rounded-lg ${currentView === 'profile' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`} title="My Profile"><UserIcon /></button>
+                    <button onClick={() => setCurrentView('search')} className={`p-3 rounded-lg ${currentView === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`} title="Search & Cart"><SearchIcon /></button>
+                    <button onClick={() => setCurrentView('transactions')} className={`p-3 mt-2 rounded-lg ${currentView === 'transactions' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`} title="Transactions"><ListIcon /></button>
+                    <button onClick={() => setCurrentView('balance')} className={`p-3 mt-2 rounded-lg ${currentView === 'balance' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`} title="Balances"><ScaleIcon /></button>
+                    <button onClick={() => setCurrentView('matrix')} className={`p-3 mt-2 rounded-lg ${currentView === 'matrix' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`} title="Matrix"><GridIcon /></button>
+                    <button onClick={() => setCurrentView('users')} className={`p-3 mt-2 rounded-lg ${currentView === 'users' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`} title="Users"><UsersIcon /></button>
+                    <button onClick={() => setCurrentView('profile')} className={`p-3 mt-2 rounded-lg ${currentView === 'profile' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`} title="My Profile"><UserIcon /></button>
                 </div>
                 <div className="shrink-0 text-center">
                     {currentUserProfile && (
-                        <button onClick={() => setCurrentView('profile')} className="mb-2 px-2 py-1 rounded-lg hover:bg-gray-100 w-full text-center" title="Go to your profile">
-                            <span className="text-xs text-gray-500">Logged in as</span>
-                            <span className="text-sm font-semibold text-blue-700 block truncate" title={currentUserProfile.nickname}>
+                        <button onClick={() => setCurrentView('profile')} className="mb-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 w-full text-center" title="Go to your profile">
+                            <span className="text-xs text-gray-500 dark:text-slate-400">Logged in as</span>
+                            <span className="text-sm font-semibold text-blue-700 dark:text-blue-400 block truncate" title={currentUserProfile.nickname}>
                                 {currentUserProfile.nickname}
                             </span>
                         </button>
                     )}
-                    <button onClick={handleSignOut} className="p-3 rounded-lg text-gray-600 hover:bg-gray-100" title="Sign Out"><LogOutIcon /></button>
+                    <button onClick={handleSignOut} className="p-3 rounded-lg text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700" title="Sign Out"><LogOutIcon /></button>
                 </div>
               </nav>
-              <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-gray-50">{renderView()}</main>
+              <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-800 relative">
+                <div className="absolute top-4 right-4">
+                    <ThemeSwitcher />
+                </div>
+                {renderView()}
+              </main>
             </div>
           );
         }
@@ -436,34 +500,34 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-blue-700 mb-6">My Profile</h1>
-                    <div className="max-w-2xl bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                    <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-6">My Profile</h1>
+                    <div className="max-w-2xl bg-white dark:bg-slate-900 p-8 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
                         <form onSubmit={handleUpdateProfile} className="space-y-6">
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                                <input id="email" type="text" value={user.email} disabled className="mt-1 w-full p-3 bg-gray-200 border border-gray-300 rounded-lg cursor-not-allowed"/>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Email</label>
+                                <input id="email" type="text" value={user.email} disabled className="mt-1 w-full p-3 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg cursor-not-allowed"/>
                             </div>
                             <div>
-                                <label htmlFor="profile-nickname" className="block text-sm font-medium text-gray-700">Nickname</label>
-                                <input id="profile-nickname" type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} required maxLength="25" className="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+                                <label htmlFor="profile-nickname" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Nickname</label>
+                                <input id="profile-nickname" type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} required maxLength="25" className="mt-1 w-full p-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
-                                    <input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-slate-300">First Name</label>
+                                    <input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full p-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
                                 </div>
                                 <div>
-                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
-                                    <input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Last Name</label>
+                                    <input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full p-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="wishlistUrl" className="block text-sm font-medium text-gray-700">Wishlist URL</label>
-                                <input id="wishlistUrl" type="url" value={wishlistUrl} onChange={(e) => setWishlistUrl(e.target.value)} className="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+                                <label htmlFor="wishlistUrl" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Wishlist URL</label>
+                                <input id="wishlistUrl" type="url" value={wishlistUrl} onChange={(e) => setWishlistUrl(e.target.value)} className="mt-1 w-full p-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
                             </div>
                             <div>
-                                <label htmlFor="tradelistUrl" className="block text-sm font-medium text-gray-700">Tradelist URL</label>
-                                <input id="tradelistUrl" type="url" value={tradelistUrl} onChange={(e) => setTradelistUrl(e.target.value)} className="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+                                <label htmlFor="tradelistUrl" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Tradelist URL</label>
+                                <input id="tradelistUrl" type="url" value={tradelistUrl} onChange={(e) => setTradelistUrl(e.target.value)} className="mt-1 w-full p-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
                             </div>
                             <div className="flex items-center justify-end gap-4">
                                 {message && <p className={`text-sm ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
@@ -487,37 +551,37 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-blue-700 mb-6">Users List</h1>
-                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                    <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-6">Users List</h1>
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700 shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                                <thead className="text-xs text-gray-500 dark:text-slate-400 uppercase bg-gray-50 dark:bg-slate-800">
                                     <tr>
                                         <th className="px-6 py-3">Nickname</th>
                                         <th className="px-6 py-3">Wishlist</th>
                                         <th className="px-6 py-3">Tradelist</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                                     {profiles.map(profile => (
-                                        <tr key={profile.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 font-medium text-gray-900" title={getProfileFullName(profile)}>{profile.nickname}</td>
+                                        <tr key={profile.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-200" title={getProfileFullName(profile)}>{profile.nickname}</td>
                                             <td className="px-6 py-4">
                                                 {profile.wishlist_url ? (
-                                                    <a href={profile.wishlist_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                    <a href={profile.wishlist_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                                                         View Wishlist <ExternalLinkIcon />
                                                     </a>
                                                 ) : (
-                                                    <span className="text-gray-400">Not provided</span>
+                                                    <span className="text-gray-400 dark:text-slate-500">Not provided</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {profile.tradelist_url ? (
-                                                    <a href={profile.tradelist_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                    <a href={profile.tradelist_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                                                         View Tradelist <ExternalLinkIcon />
                                                     </a>
                                                 ) : (
-                                                    <span className="text-gray-400">Not provided</span>
+                                                    <span className="text-gray-400 dark:text-slate-500">Not provided</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -572,21 +636,21 @@
           return (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
-                <h1 className="text-3xl font-bold text-blue-700 mb-4">Card Search</h1>
+                <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-4">Card Search</h1>
                 <div className="flex gap-2 mb-4">
-                  <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder='Start typing a card name...' className="flex-grow bg-white border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"/>
+                  <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder='Start typing a card name...' className="flex-grow bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900 dark:text-slate-200"/>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm min-h-[60vh]">
-                  {isLoading && <p className="text-gray-500 text-center py-12">Searching...</p>}
+                <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700 shadow-sm min-h-[60vh]">
+                  {isLoading && <p className="text-gray-500 dark:text-slate-400 text-center py-12">Searching...</p>}
                   {error && <p className="text-red-600 text-center py-12">{error}</p>}
-                  {!isLoading && searchResults.length === 0 && !error && <p className="text-gray-500 text-center py-12">Search results will be displayed here.</p>}
+                  {!isLoading && searchResults.length === 0 && !error && <p className="text-gray-500 dark:text-slate-400 text-center py-12">Search results will be displayed here.</p>}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {searchResults.map(card => (
-                      <div key={`${card.id}-${card.finish}`} className="bg-gray-50 rounded-lg p-2 flex flex-col items-center text-center border border-gray-200 hover:shadow-md transition-shadow">
+                      <div key={`${card.id}-${card.finish}`} className="bg-gray-50 dark:bg-slate-800 rounded-lg p-2 flex flex-col items-center text-center border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
                         <a href={card.scryfall_uri} target="_blank" rel="noopener noreferrer"><img src={card.image_uri} alt={card.name} className="rounded-md w-full mb-2" /></a>
-                        <h3 className="font-semibold text-sm text-gray-900">{card.name} {card.finish === 'foil' && <span className="text-blue-500">(Foil)</span>}</h3>
-                        <p className="text-xs text-gray-500">{card.set_name}</p>
-                        <p className="font-bold text-blue-600 text-sm my-1">{card.price ? `${card.price} €` : 'N/A'}</p>
+                        <h3 className="font-semibold text-sm text-gray-900 dark:text-slate-200">{card.name} {card.finish === 'foil' && <span className="text-blue-500">(Foil)</span>}</h3>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{card.set_name}</p>
+                        <p className="font-bold text-blue-600 dark:text-blue-400 text-sm my-1">{card.price ? `${card.price} €` : 'N/A'}</p>
                         <button onClick={() => addToCart(card)} className="bg-blue-500 text-white text-xs w-full py-1 rounded-md mt-auto hover:bg-blue-600 transition-colors">Add to Cart</button>
                       </div>
                     ))}
@@ -594,7 +658,7 @@
                 </div>
               </div>
               <div className="lg:sticky lg:top-8 h-fit">
-                <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center"><span className="ml-2">Cart</span></h2>
+                <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-400 mb-4 flex items-center"><span className="ml-2">Cart</span></h2>
                 <Cart cart={cart} removeFromCart={removeFromCart} updateCartItemPrice={updateCartItemPrice} updateCartItemLang={updateCartItemLang} profiles={profiles} addTransaction={addTransaction} currentUserProfile={currentUserProfile} />
               </div>
             </div>
@@ -650,20 +714,20 @@
             };
 
             return (
-                <div className="bg-white rounded-lg p-4 flex flex-col border border-gray-200 shadow-sm max-h-[calc(100vh-8rem)]">
+                <div className="bg-white dark:bg-slate-900 rounded-lg p-4 flex flex-col border border-gray-200 dark:border-slate-700 shadow-sm max-h-[calc(100vh-8rem)]">
                     <div className="flex-grow overflow-y-auto mb-4 pr-2">
-                        {cart.length === 0 ? <p className="text-gray-500 text-center mt-8">Your cart is empty.</p> :
+                        {cart.length === 0 ? <p className="text-gray-500 dark:text-slate-400 text-center mt-8">Your cart is empty.</p> :
                             <ul className="space-y-3">
                                 {cart.map(card => (
-                                    <li key={card.cartItemId} className="flex items-center justify-between bg-gray-100 p-2 rounded-lg">
+                                    <li key={card.cartItemId} className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 p-2 rounded-lg">
                                         <div className="text-sm flex-grow">
-                                            <p className="font-semibold text-gray-900">{card.name} {card.finish === 'foil' && <span className="text-blue-500">(Foil)</span>}</p>
-                                            <p className="text-xs text-gray-500">{card.set_name}</p>
+                                            <p className="font-semibold text-gray-900 dark:text-slate-200">{card.name} {card.finish === 'foil' && <span className="text-blue-500">(Foil)</span>}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400">{card.set_name}</p>
                                         </div>
                                         <div className="flex items-center">
-                                            <input type="text" value={card.lang} onChange={(e) => updateCartItemLang(card.cartItemId, e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono text-gray-900" maxLength="2" />
-                                            <input type="number" value={card.finalPrice} onChange={(e) => updateCartItemPrice(card.cartItemId, e.target.value)} className="w-20 ml-2 bg-white border border-gray-300 rounded-md p-1 text-right font-mono text-gray-900" step="0.01" />
-                                            <span className="ml-1 mr-2 text-gray-600">€</span>
+                                            <input type="text" value={card.lang} onChange={(e) => updateCartItemLang(card.cartItemId, e.target.value.toUpperCase())} className="w-10 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md p-1 text-center font-mono text-gray-900 dark:text-slate-200" maxLength="2" />
+                                            <input type="number" value={card.finalPrice} onChange={(e) => updateCartItemPrice(card.cartItemId, e.target.value)} className="w-20 ml-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md p-1 text-right font-mono text-gray-900 dark:text-slate-200" step="0.01" />
+                                            <span className="ml-1 mr-2 text-gray-600 dark:text-slate-400">€</span>
                                             <button onClick={() => removeFromCart(card.cartItemId)} className="text-red-500 hover:text-red-700"><Trash2Icon /></button>
                                         </div>
                                     </li>
@@ -672,22 +736,22 @@
                         }
                     </div>
                     {cart.length > 0 && (
-                        <div className="border-t border-gray-200 pt-4 shrink-0">
+                        <div className="border-t border-gray-200 dark:border-slate-700 pt-4 shrink-0">
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700">Buyer</label>
-                                    <select value={buyerId} onChange={e => setBuyerId(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">Buyer</label>
+                                    <select value={buyerId} onChange={e => setBuyerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 text-gray-900 dark:text-slate-200">
                                         {profiles.map(p => <option key={p.id} value={p.id} title={getProfileFullName(p)}>{p.nickname}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700">Seller</label>
-                                    <select value={sellerId} onChange={e => setSellerId(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">Seller</label>
+                                    <select value={sellerId} onChange={e => setSellerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 text-gray-900 dark:text-slate-200">
                                         {profiles.map(p => <option key={p.id} value={p.id} title={getProfileFullName(p)}>{p.nickname}</option>)}
                                     </select>
                                 </div>
                             </div>
-                            <div className="text-right font-bold text-xl mb-4 text-gray-900">Total: {total} €</div>
+                            <div className="text-right font-bold text-xl mb-4 text-gray-900 dark:text-slate-200">Total: {total} €</div>
                             <button onClick={handleRecordTransaction} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors">Record Transaction</button>
                         </div>
                     )}
@@ -751,45 +815,45 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-blue-700 mb-6">Transaction History</h1>
-                     <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">Buyer</label>
-                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                    <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-6">Transaction History</h1>
+                     <div className="bg-white dark:bg-slate-900 p-4 rounded-lg mb-6 border border-gray-200 dark:border-slate-700 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Buyer</label>
+                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 mt-1">
                                 <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">Seller</label>
-                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Seller</label>
+                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 mt-1">
                                 <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">Start Date</label>
-                            <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">Start Date</label>
+                            <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 mt-1" />
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">End Date</label>
-                            <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="text-sm font-medium">End Date</label>
+                            <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 mt-1" />
                         </div>
-                        <div className="flex items-center space-x-4 lg:col-span-4 justify-end">
+                        <div className="flex items-center space-x-4 lg:col-span-4 justify-end text-gray-600 dark:text-slate-300">
                             <div className="flex items-center">
-                                <input type="checkbox" id="involved" name="involved" checked={filters.involved} onChange={handleFilterChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <label htmlFor="involved" className="ml-2 text-sm text-gray-600">Only show my transactions</label>
+                                <input type="checkbox" id="involved" name="involved" checked={filters.involved} onChange={handleFilterChange} className="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" />
+                                <label htmlFor="involved" className="ml-2 text-sm">Only show my transactions</label>
                             </div>
                             <div className="flex items-center">
-                                <input type="checkbox" id="showCancelled" checked={showCancelled} onChange={() => setShowCancelled(!showCancelled)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <label htmlFor="showCancelled" className="ml-2 text-sm text-gray-600">Show cancelled</label>
+                                <input type="checkbox" id="showCancelled" checked={showCancelled} onChange={() => setShowCancelled(!showCancelled)} className="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" />
+                                <label htmlFor="showCancelled" className="ml-2 text-sm">Show cancelled</label>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700 shadow-sm">
                         <div className="overflow-x-auto overflow-y-visible">
                             <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                                <thead className="text-xs text-gray-500 dark:text-slate-400 uppercase bg-gray-50 dark:bg-slate-800">
                                     <tr>
                                         <th className="px-4 py-3">Date</th><th className="px-4 py-3">Buyer</th><th className="px-4 py-3">Seller</th>
                                         <th className="px-4 py-3">Card / Description</th><th className="px-4 py-3">Set</th>
@@ -799,7 +863,7 @@
                                         <th className="px-4 py-3 text-right">Total</th><th className="px-4 py-3">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                                     {filteredTransactions.slice().reverse().map(tx => {
                                         const isCancelled = tx.status === 'cancelled';
                                         const isAdmin = currentUserProfile?.role === 'admin';
@@ -810,9 +874,9 @@
                                             <React.Fragment key={tx.id}>
                                                 {(tx.cards || []).map((c, index) => {
                                                     const isManual = c.finish === 'manual';
-                                                    const rowClass = isManual ? 'bg-blue-50' : '';
+                                                    const rowClass = isManual ? 'bg-blue-50 dark:bg-blue-900/20' : '';
                                                     return (
-                                                    <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-gray-100' : `hover:bg-gray-50 ${rowClass}`}`}>
+                                                    <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-gray-100 dark:bg-slate-800' : `hover:bg-gray-50 dark:hover:bg-slate-800 ${rowClass}`}`}>
                                                         {index === 0 && (<>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.buyer)}>{getProfileData(tx.buyer, 'nickname')}</td>
@@ -821,26 +885,26 @@
                                                         
                                                         {isManual ? (
                                                             <td className="px-4 py-4 italic">
-                                                                <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white disabled:cursor-not-allowed" disabled={isCancelled || !canEdit} />
+                                                                <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white dark:focus:bg-slate-700 disabled:cursor-not-allowed" disabled={isCancelled || !canEdit} />
                                                             </td>
                                                         ) : (
                                                             <td className="px-4 py-4 relative group">
-                                                                <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                                <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                                                                     {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
                                                                 </a>
                                                                 {c.image_uri && (
-                                                                    <img src={c.image_uri} alt={c.name} className="hidden group-hover:block absolute z-20 top-0 left-full ml-2 w-56 rounded-lg shadow-lg" onError={(e) => e.target.style.display='none'}/>
+                                                                    <img src={c.image_uri} alt={c.name} className="hidden group-hover:block absolute z-20 bottom-0 left-full ml-2 w-56 rounded-lg shadow-lg" onError={(e) => e.target.style.display='none'}/>
                                                                 )}
                                                             </td>
                                                         )}
                                                         
-                                                        <td className="px-4 py-4 text-gray-600">{!isManual && c.set_name}</td>
+                                                        <td className="px-4 py-4 text-gray-600 dark:text-slate-400">{!isManual && c.set_name}</td>
                                                         <td className="px-4 py-4">
-                                                            {!isManual && <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono disabled:bg-gray-100 disabled:cursor-not-allowed" maxLength="2" disabled={isCancelled || !canEdit} />}
+                                                            {!isManual && <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md p-1 text-center font-mono disabled:bg-gray-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed" maxLength="2" disabled={isCancelled || !canEdit} />}
                                                         </td>
                                                         <td className="px-4 py-4 font-mono">
                                                             {!isManual && (c.purchase_uris?.cardmarket ? (
-                                                                <a href={c.purchase_uris.cardmarket} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                                <a href={c.purchase_uris.cardmarket} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                                                                     {typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'} <ExternalLinkIcon />
                                                                 </a>
                                                             ) : (
@@ -849,13 +913,13 @@
                                                         </td>
                                                         <td className="px-4 py-4">
                                                             <div className="flex items-center">
-                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'finalPrice', parseFloat(e.target.value) || 0)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono disabled:bg-gray-100 disabled:cursor-not-allowed" step="0.01" disabled={isCancelled || !canEdit} />
-                                                                <span className="ml-1 text-gray-600">€</span>
+                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'finalPrice', parseFloat(e.target.value) || 0)} className="w-20 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md p-1 text-right font-mono disabled:bg-gray-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed" step="0.01" disabled={isCancelled || !canEdit} />
+                                                                <span className="ml-1 text-gray-600 dark:text-slate-400">€</span>
                                                             </div>
                                                         </td>
                                                         {index === 0 && (<>
                                                             <td className="px-4 py-4 text-right font-mono" rowSpan={tx.cards.length}>{typeof tx.total === 'number' ? tx.total.toFixed(2) : '0.00'} €</td>
-                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100' : 'text-red-500 hover:bg-red-100'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isCancelled ? 'Restore' : 'Cancel'} disabled={!canEdit}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/50' : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isCancelled ? 'Restore' : 'Cancel'} disabled={!canEdit}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
                                                         </>)}
                                                     </tr>
                                                 )})}
@@ -925,24 +989,24 @@
             return (
                 <div>
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-3xl font-bold text-blue-700">My Balances</h1>
+                        <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">My Balances</h1>
                         <button onClick={() => setShowForm(true)} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"><PlusCircleIcon /> Add Payment</button>
                     </div>
                     {showForm && <ManualTransactionForm profiles={profiles} addTransaction={addTransaction} onClose={() => setShowForm(false)} currentUserProfile={currentUserProfile} />}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                           <h2 className="text-xl font-semibold text-gray-800 mb-4">I Owe</h2>
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+                           <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-200 mb-4">I Owe</h2>
                            {debts.length === 0 ? (
-                               <p className="text-gray-500">You have no outstanding debts.</p>
+                               <p className="text-gray-500 dark:text-slate-400">You have no outstanding debts.</p>
                            ) : (
                                <ul className="space-y-3">
                                    {debts.map(debt => (
-                                       <li key={debt.to} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                                       <li key={debt.to} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                                            <div className="flex items-center gap-3">
-                                               <span className="font-medium text-gray-700">You</span>
+                                               <span className="font-medium text-gray-700 dark:text-slate-300">You</span>
                                                <ArrowRightIcon />
-                                               <span className="font-medium text-gray-700" title={getProfileFullName(debt.to)}>{profilesById[debt.to]?.nickname || 'Unknown'}</span>
+                                               <span className="font-medium text-gray-700 dark:text-slate-300" title={getProfileFullName(debt.to)}>{profilesById[debt.to]?.nickname || 'Unknown'}</span>
                                            </div>
                                            <span className="font-bold text-red-600 text-lg">{debt.amount.toFixed(2)} €</span>
                                        </li>
@@ -950,18 +1014,18 @@
                                </ul>
                            )}
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                           <h2 className="text-xl font-semibold text-gray-800 mb-4">Owed to Me</h2>
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+                           <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-200 mb-4">Owed to Me</h2>
                            {credits.length === 0 ? (
-                               <p className="text-gray-500">Nobody owes you money.</p>
+                               <p className="text-gray-500 dark:text-slate-400">Nobody owes you money.</p>
                            ) : (
                                <ul className="space-y-3">
                                    {credits.map(credit => (
-                                       <li key={credit.from} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                       <li key={credit.from} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                                            <div className="flex items-center gap-3">
-                                                <span className="font-medium text-gray-700" title={getProfileFullName(credit.from)}>{profilesById[credit.from]?.nickname || 'Unknown'}</span>
+                                                <span className="font-medium text-gray-700 dark:text-slate-300" title={getProfileFullName(credit.from)}>{profilesById[credit.from]?.nickname || 'Unknown'}</span>
                                                 <ArrowRightIcon />
-                                                <span className="font-medium text-gray-700">You</span>
+                                                <span className="font-medium text-gray-700 dark:text-slate-300">You</span>
                                            </div>
                                            <span className="font-bold text-green-600 text-lg">{credit.amount.toFixed(2)} €</span>
                                        </li>
@@ -998,25 +1062,25 @@
 
             return (
                 <div>
-                    <h1 className="text-3xl font-bold text-blue-700 mb-6">Balance Matrix</h1>
-                    <p className="text-sm text-gray-600 mb-4">This table shows who owes whom. A positive value in cell (Row, Column) means the person in the **Row** owes money to the person in the **Column**.</p>
-                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm overflow-x-auto">
+                    <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-6">Balance Matrix</h1>
+                    <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">This table shows who owes whom. A positive value in cell (Row, Column) means the person in the **Row** owes money to the person in the **Column**.</p>
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700 shadow-sm overflow-x-auto">
                         <table className="w-full min-w-[600px] text-sm text-center">
                             <thead>
                                 <tr>
-                                    <th className="p-3 border-b-2 border-r border-gray-200 text-gray-600 bg-gray-50 sticky left-0 z-10">↓ Owes / Owed to →</th>
-                                    {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-gray-200 text-gray-800 font-semibold" title={getProfileFullName(p)}>{p.nickname}</th>)}
+                                    <th className="p-3 border-b-2 border-r border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 sticky left-0 z-10">↓ Owes / Owed to →</th>
+                                    {profiles.map(p => <th key={p.id} className="p-3 border-b-2 border-gray-200 dark:border-slate-700 text-gray-800 dark:text-slate-200 font-semibold" title={getProfileFullName(p)}>{p.nickname}</th>)}
                                 </tr>
                             </thead>
                             <tbody>
                                 {profiles.map(buyer => (
                                     <tr key={buyer.id}>
-                                        <th className="p-3 border-r border-gray-200 text-left font-semibold text-gray-800 bg-gray-50 sticky left-0 z-10" title={getProfileFullName(buyer)}>{buyer.nickname}</th>
+                                        <th className="p-3 border-r border-gray-200 dark:border-slate-700 text-left font-semibold text-gray-800 dark:text-slate-200 bg-gray-50 dark:bg-slate-800 sticky left-0 z-10" title={getProfileFullName(buyer)}>{buyer.nickname}</th>
                                         {profiles.map(seller => {
-                                            if (buyer.id === seller.id) return <td key={seller.id} className="p-3 bg-gray-100 border-t border-gray-200"></td>;
+                                            if (buyer.id === seller.id) return <td key={seller.id} className="p-3 bg-gray-100 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700"></td>;
                                             const netBalance = (balances[buyer.id]?.[seller.id] || 0) - (balances[seller.id]?.[buyer.id] || 0);
-                                            const colorClass = netBalance > 0 ? 'text-red-600 bg-red-50' : netBalance < 0 ? 'text-green-600 bg-green-50' : 'text-gray-500';
-                                            return <td key={seller.id} className={`p-3 border-t border-gray-200 font-mono font-bold ${colorClass}`}>{netBalance.toFixed(2)}</td>;
+                                            const colorClass = netBalance > 0 ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : netBalance < 0 ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-gray-500 dark:text-slate-400';
+                                            return <td key={seller.id} className={`p-3 border-t border-gray-200 dark:border-slate-700 font-mono font-bold ${colorClass}`}>{netBalance.toFixed(2)}</td>;
                                         })}
                                     </tr>
                                 ))}
@@ -1058,27 +1122,27 @@
             }, [payerId, receiverId, amount, description, addTransaction, onClose]);
 
             return (
-                <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200 shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-blue-700">Record a Manual Payment</h2>
+                <div className="bg-white dark:bg-slate-900 rounded-lg p-6 mb-6 border border-gray-200 dark:border-slate-700 shadow-sm">
+                    <h2 className="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-400">Record a Manual Payment</h2>
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Who pays?</label>
-                            <select value={payerId} onChange={e => setPayerId(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="block text-sm font-medium mb-1">Who pays?</label>
+                            <select value={payerId} onChange={e => setPayerId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2">
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Who receives?</label>
-                            <select value={receiverId} onChange={e => setReceiverId(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900">
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="block text-sm font-medium mb-1">Who receives?</label>
+                            <select value={receiverId} onChange={e => setReceiverId(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2">
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Amount (€)</label>
-                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} step="0.01" className="w-full bg-white border border-gray-300 rounded-lg p-2 text-gray-900" />
+                        <div className="text-gray-700 dark:text-slate-300">
+                            <label className="block text-sm font-medium mb-1">Amount (€)</label>
+                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} step="0.01" className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2" />
                         </div>
                         <div className="md:col-span-4 flex justify-end gap-4 mt-2">
-                            <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                            <button type="button" onClick={onClose} className="bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg transition-colors">Cancel</button>
                             <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Save</button>
                         </div>
                     </form>
