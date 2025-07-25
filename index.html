@@ -274,15 +274,6 @@
                 }
             }, []);
 
-            useEffect(() => {
-                const root = window.document.documentElement;
-                if (isDarkMode) {
-                    root.classList.add('dark');
-                } else {
-                    root.classList.remove('dark');
-                }
-            }, [isDarkMode]);
-
             if (isLoading) {
                 return <div className="text-center p-10 dark:text-white">Initialisation...</div>;
             }
@@ -311,7 +302,15 @@
 
           useEffect(() => {
             localStorage.setItem('app-theme', theme);
-          }, [theme]);
+            const root = window.document.documentElement;
+            
+            // Le mode sombre ne s'applique que pour le thème 'modern'
+            if (theme === 'modern' && isDarkMode) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+          }, [theme, isDarkMode]);
 
           const fetchData = useCallback(async () => {
               setIsLoading(true);
