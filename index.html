@@ -643,20 +643,16 @@
         const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile }) => {
             const [showCancelled, setShowCancelled] = useState(false);
             const [filters, setFilters] = useState({ 
-                buyer: currentUserProfile?.id || 'all', 
+                buyer: 'all', 
                 seller: 'all', 
-                involved: true // New state to toggle between 'involved' and 'all'
+                involved: true,
+                startDate: '',
+                endDate: ''
             });
             
             useEffect(() => {
                 if (currentUserProfile) {
-                    setFilters({
-                        buyer: 'all',
-                        seller: 'all',
-                        involved: true,
-                        startDate: '',
-                        endDate: ''
-                    });
+                    setFilters(prev => ({ ...prev, involved: true }));
                 }
             }, [currentUserProfile]);
 
@@ -667,11 +663,7 @@
 
             const handleFilterChange = (e) => { 
                 const { name, value, type, checked } = e.target;
-                if (name === 'involved') {
-                    setFilters(prev => ({ ...prev, involved: checked }));
-                } else {
-                    setFilters(prev => ({ ...prev, [name]: value }));
-                }
+                setFilters(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
             };
             
             const filteredTransactions = useMemo(() => (transactions || [])
@@ -708,14 +700,14 @@
                      <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div>
                             <label className="text-sm font-medium text-gray-700">Buyer</label>
-                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" disabled={filters.involved}>
+                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
                                 <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="text-sm font-medium text-gray-700">Seller</label>
-                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" disabled={filters.involved}>
+                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
                                 <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
