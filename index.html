@@ -245,7 +245,7 @@
             if (error) return <div className="text-center text-red-500 p-10">{error}</div>;
             switch (currentView) {
               case 'search': return <SearchAndCartView {...{ cart, addToCart, removeFromCart, updateCartItemPrice, updateCartItemLang, profiles, addTransaction, currentUserProfile }} />;
-              case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCard, toggleTransactionStatus }} />;
+              case 'transactions': return <TransactionsView {...{ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile }} />;
               case 'balance': return <BalanceDashboard {...{ transactions, profiles, addTransaction, currentUserProfile }} />;
               case 'matrix': return <BalanceMatrix {...{ transactions, profiles }} />;
               case 'profile': return <ProfileView user={user} profile={currentUserProfile} onProfileUpdate={handleProfileUpdate} />;
@@ -590,17 +590,48 @@
             );
         });
 
-        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus }) => {
-            const [filters, setFilters] = useState({ buyer: 'all', seller: 'all', startDate: '', endDate: '' });
+        const TransactionsView = React.memo(({ transactions, profiles, updateTransactionCard, toggleTransactionStatus, currentUserProfile }) => {
+            const [showCancelled, setShowCancelled] = useState(false);
+            const [filters, setFilters] = useState({ 
+                buyer: currentUserProfile?.id || 'all', 
+                seller: 'all', 
+                involved: true // New state to toggle between 'involved' and 'all'
+            });
             
+            useEffect(() => {
+                if (currentUserProfile) {
+                    setFilters({
+                        buyer: 'all',
+                        seller: 'all',
+                        involved: true,
+                        startDate: '',
+                        endDate: ''
+                    });
+                }
+            }, [currentUserProfile]);
+
             const profilesById = useMemo(() => profiles.reduce((acc, profile) => {
                 acc[profile.id] = profile;
                 return acc;
             }, {}), [profiles]);
 
-            const handleFilterChange = (e) => { setFilters(prev => ({ ...prev, [e.target.name]: e.target.value })); };
+            const handleFilterChange = (e) => { 
+                const { name, value, type, checked } = e.target;
+                if (name === 'involved') {
+                    setFilters(prev => ({ ...prev, involved: checked }));
+                } else {
+                    setFilters(prev => ({ ...prev, [name]: value }));
+                }
+            };
             
             const filteredTransactions = useMemo(() => (transactions || [])
+                .filter(tx => showCancelled || tx.status !== 'cancelled')
+                .filter(tx => {
+                    if (filters.involved && currentUserProfile) {
+                        return tx.buyer === currentUserProfile.id || tx.seller === currentUserProfile.id;
+                    }
+                    return true;
+                })
                 .filter(tx => filters.buyer === 'all' || tx.buyer === filters.buyer)
                 .filter(tx => filters.seller === 'all' || tx.seller === filters.seller)
                 .filter(tx => {
@@ -611,7 +642,7 @@
                     if (startDate && txDate < startDate) return false;
                     if (endDate && txDate > endDate) return false;
                     return true;
-                }), [transactions, filters]);
+                }), [transactions, filters, showCancelled, currentUserProfile]);
 
             const getProfileData = (id, field) => profilesById[id]?.[field] || (field === 'nickname' ? 'Unknown User' : '');
             const getProfileFullName = (id) => {
@@ -624,17 +655,17 @@
             return (
                 <div>
                     <h1 className="text-3xl font-bold text-blue-700 mb-6">Transaction History</h1>
-                     <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                     <div className="bg-white p-4 rounded-lg mb-6 border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div>
                             <label className="text-sm font-medium text-gray-700">Buyer</label>
-                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                            <select name="buyer" value={filters.buyer} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" disabled={filters.involved}>
                                 <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="text-sm font-medium text-gray-700">Seller</label>
-                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900">
+                            <select name="seller" value={filters.seller} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" disabled={filters.involved}>
                                 <option value="all">All</option>
                                 {profiles.map(p => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                             </select>
@@ -647,6 +678,16 @@
                             <label className="text-sm font-medium text-gray-700">End Date</label>
                             <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="w-full bg-white border border-gray-300 rounded-lg p-2 mt-1 text-gray-900" />
                         </div>
+                        <div className="flex items-center space-x-4 lg:col-span-4 justify-end">
+                            <div className="flex items-center">
+                                <input type="checkbox" id="involved" name="involved" checked={filters.involved} onChange={handleFilterChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <label htmlFor="involved" className="ml-2 text-sm text-gray-600">Only show my transactions</label>
+                            </div>
+                            <div className="flex items-center">
+                                <input type="checkbox" id="showCancelled" checked={showCancelled} onChange={() => setShowCancelled(!showCancelled)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <label htmlFor="showCancelled" className="ml-2 text-sm text-gray-600">Show cancelled</label>
+                            </div>
+                        </div>
                     </div>
                     <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                         <div className="overflow-x-auto">
@@ -654,7 +695,7 @@
                                 <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3">Date</th><th className="px-4 py-3">Buyer</th><th className="px-4 py-3">Seller</th>
-                                        <th className="px-4 py-3">Card</th><th className="px-4 py-3">Set</th>
+                                        <th className="px-4 py-3">Card / Description</th><th className="px-4 py-3">Set</th>
                                         <th className="px-4 py-3">Lang</th>
                                         <th className="px-4 py-3">CardMarket Trend</th>
                                         <th className="px-4 py-3">Final Price</th>
@@ -666,38 +707,44 @@
                                         const isCancelled = tx.status === 'cancelled';
                                         return (
                                             <React.Fragment key={tx.id}>
-                                                {(tx.cards || []).map((c, index) => (
-                                                    <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-gray-100' : 'hover:bg-gray-50'}`}>
+                                                {(tx.cards || []).map((c, index) => {
+                                                    const isManual = c.finish === 'manual';
+                                                    const rowClass = isManual ? 'bg-blue-50' : '';
+                                                    return (
+                                                    <tr key={c.cartItemId || `${c.id}-${c.finish}`} className={`${isCancelled ? 'opacity-40 bg-gray-100' : `hover:bg-gray-50 ${rowClass}`}`}>
                                                         {index === 0 && (<>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.buyer)}>{getProfileData(tx.buyer, 'nickname')}</td>
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length} title={getProfileFullName(tx.seller)}>{getProfileData(tx.seller, 'nickname')}</td>
                                                         </>)}
-                                                        <td className="px-4 py-4 relative group">
-                                                            <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                                                {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
-                                                            </a>
-                                                            {c.image_uri && (
-                                                                <img 
-                                                                    src={c.image_uri} 
-                                                                    alt={c.name} 
-                                                                    className="hidden group-hover:block absolute z-20 top-0 left-full ml-2 w-36 rounded-lg shadow-lg"
-                                                                    onError={(e) => e.target.style.display='none'}
-                                                                />
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-4 text-gray-600">{c.set_name}</td>
+                                                        
+                                                        {isManual ? (
+                                                            <td className="px-4 py-4 italic">
+                                                                <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white" disabled={isCancelled} />
+                                                            </td>
+                                                        ) : (
+                                                            <td className="px-4 py-4 relative group">
+                                                                <a href={c.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                                    {c.name} {c.finish === 'foil' && '(Foil)'} {c.scryfall_uri && <ExternalLinkIcon />}
+                                                                </a>
+                                                                {c.image_uri && (
+                                                                    <img src={c.image_uri} alt={c.name} className="hidden group-hover:block absolute z-20 top-0 left-full ml-2 w-36 rounded-lg shadow-lg" onError={(e) => e.target.style.display='none'}/>
+                                                                )}
+                                                            </td>
+                                                        )}
+                                                        
+                                                        <td className="px-4 py-4 text-gray-600">{!isManual && c.set_name}</td>
                                                         <td className="px-4 py-4">
-                                                            <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono" maxLength="2" disabled={isCancelled} />
+                                                            {!isManual && <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono" maxLength="2" disabled={isCancelled} />}
                                                         </td>
                                                         <td className="px-4 py-4 font-mono">
-                                                            {c.purchase_uris?.cardmarket ? (
+                                                            {!isManual && (c.purchase_uris?.cardmarket ? (
                                                                 <a href={c.purchase_uris.cardmarket} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                                                                     {typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'} <ExternalLinkIcon />
                                                                 </a>
                                                             ) : (
                                                                 <span>{typeof c.marketPrice === 'number' ? `${c.marketPrice.toFixed(2)} €` : 'N/A'}</span>
-                                                            )}
+                                                            ))}
                                                         </td>
                                                         <td className="px-4 py-4">
                                                             <div className="flex items-center">
@@ -710,7 +757,7 @@
                                                             <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100' : 'text-red-500 hover:bg-red-100'}`} title={isCancelled ? 'Restore' : 'Cancel'}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
                                                         </>)}
                                                     </tr>
-                                                ))}
+                                                )})}
                                             </React.Fragment>
                                         );
                                     })}
@@ -946,4 +993,4 @@
 </body>
 </html>
 "
-I have been asked to add entries to each user's profile so that the user can enter their wishlist (url) and tradelist (url). Then we could use the icon at the top right that points to the person's profile to have the list of users and the two associated urls (since we now use the nickname at the bottom left to access our own profi
+I have been asked to add entries to each user's profile so that the user can enter their wishlist (url) and tradelist (url). Then we could use the icon at the top right that points to the person's profile to have the list of users and the two associated urls (since we now use the nickname at the bottom left to access our own pr
