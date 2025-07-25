@@ -375,17 +375,12 @@
 
           const ThemeSwitcher = () => {
             const toggleTheme = () => {
-                const themes = ['light', 'dark', 'cardmarket'];
-                const currentIndex = themes.indexOf(theme);
-                const nextIndex = (currentIndex + 1) % themes.length;
-                setTheme(themes[nextIndex]);
+                setTheme(prevTheme => prevTheme === 'light' ? 'cardmarket' : 'light');
             };
 
             return (
                 <button onClick={toggleTheme} className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700">
-                    {theme === 'light' && <MoonIcon />}
-                    {theme === 'dark' && <StoreIcon />}
-                    {theme === 'cardmarket' && <SunIcon />}
+                    {theme === 'light' ? <StoreIcon /> : <SunIcon />}
                 </button>
             );
           };
