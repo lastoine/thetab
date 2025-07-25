@@ -747,6 +747,10 @@
                                 <tbody className="divide-y divide-gray-200">
                                     {filteredTransactions.slice().reverse().map(tx => {
                                         const isCancelled = tx.status === 'cancelled';
+                                        const isAdmin = currentUserProfile?.role === 'admin';
+                                        const is_involved = currentUserProfile?.id === tx.buyer || currentUserProfile?.id === tx.seller;
+                                        const canEdit = isAdmin || is_involved;
+
                                         return (
                                             <React.Fragment key={tx.id}>
                                                 {(tx.cards || []).map((c, index) => {
@@ -762,7 +766,7 @@
                                                         
                                                         {isManual ? (
                                                             <td className="px-4 py-4 italic">
-                                                                <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white" disabled={isCancelled} />
+                                                                <input type="text" defaultValue={c.name} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'name', e.target.value)} className="w-full bg-transparent border-0 p-0 focus:ring-0 focus:bg-white disabled:cursor-not-allowed" disabled={isCancelled || !canEdit} />
                                                             </td>
                                                         ) : (
                                                             <td className="px-4 py-4 relative group">
@@ -777,7 +781,7 @@
                                                         
                                                         <td className="px-4 py-4 text-gray-600">{!isManual && c.set_name}</td>
                                                         <td className="px-4 py-4">
-                                                            {!isManual && <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono" maxLength="2" disabled={isCancelled} />}
+                                                            {!isManual && <input type="text" defaultValue={c.lang} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'lang', e.target.value.toUpperCase())} className="w-10 bg-white border border-gray-300 rounded-md p-1 text-center font-mono disabled:bg-gray-100 disabled:cursor-not-allowed" maxLength="2" disabled={isCancelled || !canEdit} />}
                                                         </td>
                                                         <td className="px-4 py-4 font-mono">
                                                             {!isManual && (c.purchase_uris?.cardmarket ? (
@@ -790,13 +794,13 @@
                                                         </td>
                                                         <td className="px-4 py-4">
                                                             <div className="flex items-center">
-                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'finalPrice', parseFloat(e.target.value) || 0)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono" step="0.01" disabled={isCancelled} />
+                                                                <input type="number" defaultValue={c.finalPrice} onBlur={(e) => updateTransactionCard(tx.id, c.cartItemId, 'finalPrice', parseFloat(e.target.value) || 0)} className="w-20 bg-white border border-gray-300 rounded-md p-1 text-right font-mono disabled:bg-gray-100 disabled:cursor-not-allowed" step="0.01" disabled={isCancelled || !canEdit} />
                                                                 <span className="ml-1 text-gray-600">€</span>
                                                             </div>
                                                         </td>
                                                         {index === 0 && (<>
                                                             <td className="px-4 py-4 text-right font-mono" rowSpan={tx.cards.length}>{typeof tx.total === 'number' ? tx.total.toFixed(2) : '0.00'} €</td>
-                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100' : 'text-red-500 hover:bg-red-100'}`} title={isCancelled ? 'Restore' : 'Cancel'}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
+                                                            <td className="px-4 py-4" rowSpan={tx.cards.length}><button onClick={() => toggleTransactionStatus(tx.id)} className={`p-1 rounded ${isCancelled ? 'text-yellow-500 hover:bg-yellow-100' : 'text-red-500 hover:bg-red-100'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isCancelled ? 'Restore' : 'Cancel'} disabled={!canEdit}>{isCancelled ? <UndoIcon /> : <Trash2Icon />}</button></td>
                                                         </>)}
                                                     </tr>
                                                 )})}
